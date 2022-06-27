@@ -83,6 +83,7 @@ def _run(rgb_observation: str, config: Mapping[str, str]):
 
 
 def main():
+    print("its me Mario")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--observation', type=str, default='RGB', help='Observation to render')
@@ -93,7 +94,7 @@ def main():
 
     args = parser.parse_args()
     if 'levelName' not in args.settings:
-        args.settings['levelName'] = 'commons_harvest'
+        args.settings['levelName'] = 'my_commons_harvest'
     if 'numPlayers' not in args.settings:
         args.settings['numPlayers'] = args.players
     for k in args.settings:

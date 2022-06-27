@@ -84,6 +84,20 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "test_agent",
+    srcs = ["test_agent.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":dmlab2d",
+        ":expect_numpy_installed",
+        ":expect_pygame_installed",
+        ":runfiles_helper",
+    ],
+)
+
+
 pytype_strict_library(
     name = "runfiles_helper",
     srcs = ["runfiles_helper.py"],

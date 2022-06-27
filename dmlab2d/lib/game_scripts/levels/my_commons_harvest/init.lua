@@ -17,17 +17,17 @@ local api_factory = require 'worlds.common.api_factory'
 local simulation = require 'simulation'
 local avatar_list = require 'avatar_list'
 
-print("Who the tf calls me")
-return api_factory.apiFactory{
-    Simulation = simulation.Simulation,
-    AvatarList = avatar_list.AvatarList,
-    settings = {
-        simulation = {
-            mapName = 'default',
-            appleRespawnProbability = 0.05,
-            mudSpawnProbability = 0.5,
-            thresholdDepletion = 0.4,
-            thresholdRestoration = 0.0,
-        },
-    },
-}
+return function(mapName)
+  if mapName == '' then
+    mapName = 'default'
+  end
+  return api_factory.apiFactory{
+      Simulation = simulation.Simulation,
+      AvatarList = avatar_list.AvatarList,
+      settings = {
+          simulation = {mapName = mapName},
+          episodeLengthFrames = 1000,
+          spriteSize = 8,
+      }
+  }
+end

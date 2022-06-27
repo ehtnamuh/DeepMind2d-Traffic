@@ -29,35 +29,35 @@ _ACTION_MAP = {'MOVE': ui_renderer.get_direction_pressed}
 
 
 def _run(config: Mapping[str, str]):
-  """Run multiplayer environment, with per player rendering and actions."""
+    """Run multiplayer environment, with per player rendering and actions."""
 
-  ui = ui_renderer.Renderer(
-      config=config, action_map=_ACTION_MAP, rgb_observation='WORLD.RGB')
+    ui = ui_renderer.Renderer(
+        config=config, action_map=_ACTION_MAP, rgb_observation='WORLD.RGB')
 
-  scores = dict()
-  for step in ui.run():
-    if step.type == ui_renderer.StepType.FIRST:
-      print(f'=== Start episode {step.episode} ===')
-    else:
-      scores[step.episode] = scores.get(step.episode, 0) + step.reward
-      print(f'Episode({step.episode}), Score ({scores[step.episode]})')
+    scores = dict()
+    for step in ui.run():
+        if step.type == ui_renderer.StepType.FIRST:
+            print(f'=== Start episode {step.episode} ===')
+        else:
+            scores[step.episode] = scores.get(step.episode, 0) + step.reward
+            print(f'Episode({step.episode}), Score ({scores[step.episode]})')
 
-    if step.type == ui_renderer.StepType.LAST:
-      print(f'=== End episode {step.episode} ===')
+        if step.type == ui_renderer.StepType.LAST:
+            print(f'=== End episode {step.episode} ===')
 
-  print('=== Exiting ===')
-  for episode in sorted(scores):
-    print(f'Episode({episode}), Score ({scores[episode]})')
+    print('=== Exiting ===')
+    for episode in sorted(scores):
+        print(f'Episode({episode}), Score ({scores[episode]})')
 
 
 def main():
-  parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument(
-      '--settings', type=json.loads, default={}, help='Settings as JSON string')
-  args = parser.parse_args()
-  args.settings['levelName'] = 'chase_eat'
-  _run(args.settings)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--settings', type=json.loads, default={}, help='Settings as JSON string')
+    args = parser.parse_args()
+    args.settings['levelName'] = 'chase_eat'
+    _run(args.settings)
 
 
 if __name__ == '__main__':
-  main()
+    main()

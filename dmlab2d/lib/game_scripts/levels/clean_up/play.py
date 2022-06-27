@@ -41,69 +41,69 @@ _FRAMES_PER_SECOND = 8
 
 
 def _run(rgb_observation: str, config: Mapping[str, str]):
-  """Run multiplayer environment, with per player rendering and actions."""
-  player_count = int(config.get('numPlayers', '1'))
+    """Run multiplayer environment, with per player rendering and actions."""
+    player_count = int(config.get('numPlayers', '1'))
 
-  score = collections.defaultdict(float)
-  total_contrib = collections.defaultdict(float)
+    score = collections.defaultdict(float)
+    total_contrib = collections.defaultdict(float)
 
-  prefixes = [str(i + 1) + '.' for i in range(player_count)]
+    prefixes = [str(i + 1) + '.' for i in range(player_count)]
 
-  ui = ui_renderer.Renderer(
-      config=config,
-      action_map=_ACTION_MAP,
-      rgb_observation=rgb_observation,
-      player_prefixes=[str(i + 1) + '.' for i in range(player_count)],
-      frames_per_second=_FRAMES_PER_SECOND)
+    ui = ui_renderer.Renderer(
+        config=config,
+        action_map=_ACTION_MAP,
+        rgb_observation=rgb_observation,
+        player_prefixes=[str(i + 1) + '.' for i in range(player_count)],
+        frames_per_second=_FRAMES_PER_SECOND)
 
-  def player_printer(idx: int):
-    print(f'Player({idx}) contrib({total_contrib[idx]}) score({score[idx]})')
+    def player_printer(idx: int):
+        print(f'Player({idx}) contrib({total_contrib[idx]}) score({score[idx]})')
 
-  for step in ui.run():
-    if step.type == ui_renderer.StepType.FIRST:
-      print(f'=== Start episode {step.episode} ===')
-    print_player = False
-    for idx, prefix in enumerate(prefixes):
-      reward = step.env.observation(prefix + 'REWARD')
-      score[idx] += reward
-      contrib = step.env.observation(prefix + 'CONTRIB')
-      total_contrib[idx] += contrib
+    for step in ui.run():
+        if step.type == ui_renderer.StepType.FIRST:
+            print(f'=== Start episode {step.episode} ===')
+        print_player = False
+        for idx, prefix in enumerate(prefixes):
+            reward = step.env.observation(prefix + 'REWARD')
+            score[idx] += reward
+            contrib = step.env.observation(prefix + 'CONTRIB')
+            total_contrib[idx] += contrib
 
-      if step.player == idx and (reward != 0 or contrib != 0):
-        print_player = True
+            if step.player == idx and (reward != 0 or contrib != 0):
+                print_player = True
 
-    if print_player:
-      player_printer(step.player)
+        if print_player:
+            player_printer(step.player)
 
-    if step.type == ui_renderer.StepType.LAST:
-      print(f'=== End episode {step.episode} ===')
-      for idx in range(player_count):
+        if step.type == ui_renderer.StepType.LAST:
+            print(f'=== End episode {step.episode} ===')
+            for idx in range(player_count):
+                player_printer(idx)
+            print('======')
+
+    print('=== Exiting ===')
+    for idx in range(player_count):
         player_printer(idx)
-      print('======')
-
-  print('=== Exiting ===')
-  for idx in range(player_count):
-    player_printer(idx)
 
 
 def main():
-  parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument(
-      '--observation', type=str, default='RGB', help='Observation to render')
-  parser.add_argument(
-      '--settings', type=json.loads, default={}, help='Settings as JSON string')
-  parser.add_argument(
-      '--players', type=int, default=4, help='Number of players.')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--observation', type=str, default='RGB', help='Observation to render')
+    parser.add_argument(
+        '--settings', type=json.loads, default={}, help='Settings as JSON string')
+    parser.add_argument(
+        '--players', type=int, default=4, help='Number of players.')
 
-  args = parser.parse_args()
-  if 'levelName' not in args.settings:
-    args.settings['levelName'] = 'clean_up'
-  if 'numPlayers' not in args.settings:
-    args.settings['numPlayers'] = args.players
-  for k in args.settings:
-    args.settings[k] = str(args.settings[k])
-  _run(args.observation, args.settings)
+    args = parser.parse_args()
+    if 'levelName' not in args.settings:
+        args.settings['levelName'] = 'clean_up'
+    if 'numPlayers' not in args.settings:
+        args.settings['numPlayers'] = args.players
+    for k in args.settings:
+        args.settings[k] = str(args.settings[k])
+    _run(args.observation, args.settings)
 
 
 if __name__ == '__main__':
-  main()
+    main()
