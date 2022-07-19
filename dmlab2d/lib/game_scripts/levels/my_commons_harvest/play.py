@@ -63,8 +63,10 @@ def _run(rgb_observation: str, config: Mapping[str, str]):
             print(f'=== Start episode {step.episode} ===')
         print_player = False
         matrix = step.env.observation('WORLD.ZAP_COUNT')
+        print(step.env.observation('WORLD.RGB').shape)
         zap_matrix = zap_matrix + matrix if zap_matrix is not None else matrix
         for idx, prefix in enumerate(prefixes):
+            # print(step.env.observation(prefix + 'LAYER'))
             reward = step.env.observation(prefix + 'REWARD')
             score[idx] += reward
             print_player = print_player or (step.player == idx and reward != 0)
