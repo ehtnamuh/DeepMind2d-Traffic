@@ -50,12 +50,14 @@ local _PLAYER_ACTION_ORDER = {
     'move',
     'turn',
     'zap',
+    'zap2',
 }
 
 local _PLAYER_ACTION_SPEC = {
     move = {default = 0, min = 0, max = #_COMPASS},
     turn = {default = 0, min = -1, max = 1},
     zap = {default = 0, min = 0, max = 1},
+    zap2 = {default=0, min=0, max=1}
 }
 
 
@@ -150,6 +152,7 @@ function Avatar:addPlayerCallbacks(callbacks)
       grid:moveRel(piece, _COMPASS[actions.move])
     end
     grid:hitBeam(piece, "direction", 1, 0)
+    --grid:hitBeam(piece, "zapHit2", 3, 0)
   end
 
   function activeState.onUpdate.zap(grid, piece, framesOld)
@@ -161,6 +164,11 @@ function Avatar:addPlayerCallbacks(callbacks)
         state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
         grid:hitBeam(
             piece, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
+      end
+        if actions.zap2 == 1 and framesOld >= state.canZapAfterFrames then
+            state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
+        grid:hitBeam(
+            piece, "zapHit2", playerSetting.zap.length, playerSetting.zap.radius)
       end
     end
   end

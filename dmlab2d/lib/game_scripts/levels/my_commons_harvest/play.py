@@ -34,7 +34,8 @@ from dmlab2d import ui_renderer
 _ACTION_MAP = {
     'move': ui_renderer.get_direction_pressed,
     'turn': ui_renderer.get_turn_pressed,
-    'zap': ui_renderer.get_space_key_pressed
+    'zap': ui_renderer.get_space_key_pressed,
+    'zap2': ui_renderer.get_left_control_pressed
 }
 
 _FRAMES_PER_SECOND = 8
@@ -90,7 +91,7 @@ def main():
     parser.add_argument(
         '--settings', type=json.loads, default={}, help='Settings as JSON string')
     parser.add_argument(
-        '--players', type=int, default=4, help='Number of players.')
+        '--players', type=int, default=2, help='Number of players.')
 
     args = parser.parse_args()
     if 'levelName' not in args.settings:

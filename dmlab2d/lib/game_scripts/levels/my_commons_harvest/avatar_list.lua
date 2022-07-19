@@ -60,6 +60,11 @@ function AvatarList:addConfigs(worldConfig)
       sprite = 'BeamZap',
   }
 
+  worldConfig.hits.zapHit2 = {
+      layer = 'zap',
+      sprite = 'BeamZap2',
+  }
+
   table.insert(worldConfig.renderOrder, 'zap')
   table.insert(worldConfig.renderOrder, 'direction')
 
@@ -71,6 +76,8 @@ end
 function AvatarList:addSprites(tileSet)
   tileSet:addColor('Direction', {100, 100, 100, 200})
   tileSet:addColor('BeamZap', {252, 252, 106})
+  tileSet:addColor('BeamZap2', {252, 0, 0})
+
   for _, av in ipairs(self._avatarList) do
     av:addSprites(tileSet)
   end
