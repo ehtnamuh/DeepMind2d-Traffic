@@ -25,13 +25,14 @@ local AvatarList = class.Class()
 
 function AvatarList.defaultSettings()
   return {
+      bots = 0,
       framesTillRespawn = 25,
       player = read_settings.default(avatar.Avatar.defaultSettings()),
   }
 end
 
 function AvatarList:__init__(kwargs)
-  local numAvatars = kwargs.numPlayers
+  local numAvatars = kwargs.numPlayers + kwargs.settings.bots
   self._framesTillRespawn = kwargs.settings.framesTillRespawn
   self._simSettings = kwargs.simSettings
   self._numPlayers = kwargs.numPlayers
@@ -40,8 +41,10 @@ function AvatarList:__init__(kwargs)
   self._avatarList = {}
   for i = 1, numAvatars do
     self._avatarList[i] = avatar.Avatar{
+        avatars = self,
         index = i,
         settings = kwargs.settings.player[i],
+        isBot = i > kwargs.numPlayers,
         simSettings = kwargs.simSettings,
     }
   end

@@ -63,7 +63,7 @@ def _run(rgb_observation: str, config: Mapping[str, str]):
             print(f'=== Start episode {step.episode} ===')
         print_player = False
         matrix = step.env.observation('WORLD.ZAP_COUNT')
-        print(step.env.observation('WORLD.RGB').shape)
+        # print(step.env.observation('WORLD.RGB').shape)
         zap_matrix = zap_matrix + matrix if zap_matrix is not None else matrix
         for idx, prefix in enumerate(prefixes):
             # print(step.env.observation(prefix + 'LAYER'))
@@ -93,7 +93,7 @@ def main():
     parser.add_argument(
         '--settings', type=json.loads, default={}, help='Settings as JSON string')
     parser.add_argument(
-        '--players', type=int, default=2, help='Number of players.')
+        '--players', type=int, default=1, help='Number of players.')
 
     args = parser.parse_args()
     if 'levelName' not in args.settings:

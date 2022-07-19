@@ -91,6 +91,7 @@ end
 function Avatar:__init__(kwargs)
   self._settings = kwargs.settings
   self._index = kwargs.index
+    self._isBot = kwargs.isBot
   self._activeState = 'player.' .. kwargs.index
   self._waitState = 'player.' .. kwargs.index .. '.wait'
   self._simSetting = kwargs.simSettings
@@ -186,6 +187,21 @@ function Avatar:addPlayerCallbacks(callbacks)
     -- Beams do not pass through zapped players.
     return true
   end
+
+    function activeState.onHit.zapHit2(grid, player, zapper)
+        print("Hello There")
+        local zapperState = grid:userState(zapper)
+        local playerState = grid:userState(player)
+        zapperState.reward = zapperState.reward + zapperState.rewardForZapping
+        playerState.reward = playerState.reward + playerState.rewardForBeingZapped
+        playerState.hitByVector(zapperState.index):add(1)
+        if playerResetsAfterZap then
+          grid:setState(player, self._waitState)
+        end
+        -- Beams do not pass through zapped players.
+        return true
+  end
+
 
   local waitState = {}
   waitState.respawnUpdate = function(grid, player, frames)
@@ -310,6 +326,23 @@ end
 
 function Avatar:update(grid)
   grid:userState(self._piece).reward = 0
+  me_position =  grid:position(self._piece)
+  me_position[2] = me_position[2] - 5
+  hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+  print(hit)
+    local psActions = grid:userState(self._piece).actions
+    if self._isBot then
+        --for _, actionName in ipairs(_PLAYER_ACTION_ORDER) do
+        --  local action = _PLAYER_ACTION_SPEC[actionName]
+        --  psActions[actionName] = random:uniformInt(action.min, action.max)
+        --end
+        --a = grid:transform(self._piece)
+        --for i, v in pairs(a) do
+        --    print(i)
+        --end
+        psActions['move'] = 3
+        psActions['turn'] = 0
+  end
 end
 
 return {Avatar = Avatar}
