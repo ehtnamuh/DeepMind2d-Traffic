@@ -189,8 +189,9 @@ function Simulation:update(grid)
   local depl = self._settings.thresholdDepletion
   local rest = self._settings.thresholdRestoration
   local interp = (mudFraction - depl) / (rest - depl)
+  --grid:setUpdater{update = 'fruit', group = 'apple.wait', probability = self._settings.appleRespawnProbability * interp}
   grid:setUpdater{update = 'fruit', group = 'apple.wait', probability =
-        self._settings.appleRespawnProbability * interp}
+  0.1}
 
   if self._riverCount > 0 then
     local addMud = random:uniformReal(0, 1) < self._settings.mudSpawnProbability

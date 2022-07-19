@@ -25,13 +25,14 @@ local AvatarList = class.Class()
 
 function AvatarList.defaultSettings()
   return {
+      bots = 2,
       framesTillRespawn = 25,
       player = read_settings.default(avatar.Avatar.defaultSettings()),
   }
 end
 
 function AvatarList:__init__(kwargs)
-  local numAvatars = kwargs.numPlayers
+  local numAvatars = kwargs.settings.bots + kwargs.numPlayers
   self._framesTillRespawn = kwargs.settings.framesTillRespawn
   self._simSettings = kwargs.simSettings
   self._numPlayers = kwargs.numPlayers
@@ -51,6 +52,7 @@ function AvatarList:addConfigs(worldConfig)
   table.insert(worldConfig.updateOrder, 1, 'respawn')
   table.insert(worldConfig.updateOrder, 2, 'move')
   table.insert(worldConfig.updateOrder, 3, 'zap')
+   table.insert(worldConfig.updateOrder, 4, 'beamClean')
   worldConfig.hits.direction = {
       layer = 'direction',
       sprite = 'Direction',
@@ -59,7 +61,12 @@ function AvatarList:addConfigs(worldConfig)
       layer = 'zap',
       sprite = 'BeamZap',
   }
+    worldConfig.hits.clean = {
+      layer = 'beamClean',
+      sprite = 'BeamClean',
+  }
 
+  table.insert(worldConfig.renderOrder, 'beamClean')
   table.insert(worldConfig.renderOrder, 'zap')
   table.insert(worldConfig.renderOrder, 'direction')
 
@@ -71,6 +78,7 @@ end
 function AvatarList:addSprites(tileSet)
   tileSet:addColor('Direction', {100, 100, 100, 200})
   tileSet:addColor('BeamZap', {252, 252, 106})
+  tileSet:addColor('BeamClean', {252, 252, 106})
   for _, av in ipairs(self._avatarList) do
     av:addSprites(tileSet)
   end

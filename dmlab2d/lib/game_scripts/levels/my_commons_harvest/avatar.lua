@@ -50,12 +50,14 @@ local _PLAYER_ACTION_ORDER = {
     'move',
     'turn',
     'zap',
+    'clean',
 }
 
 local _PLAYER_ACTION_SPEC = {
     move = {default = 0, min = 0, max = #_COMPASS},
     turn = {default = 0, min = -1, max = 1},
     zap = {default = 0, min = 0, max = 1},
+    clean = {default = 0, min = 0, max = 1},
 }
 
 
@@ -149,7 +151,7 @@ function Avatar:addPlayerCallbacks(callbacks)
     if actions.move ~= 0 then
       grid:moveRel(piece, _COMPASS[actions.move])
     end
-    grid:hitBeam(piece, "direction", 1, 0)
+    grid:hitBeam(piece, "direction", 3, 0)
   end
 
   function activeState.onUpdate.zap(grid, piece, framesOld)
@@ -164,6 +166,19 @@ function Avatar:addPlayerCallbacks(callbacks)
       end
     end
   end
+    function activeState.onUpdate.clean(grid, piece, framesOld)
+    local state = grid:userState(piece)
+    local actions = state.actions
+
+    if playerSetting.minFramesBetweenZaps >= 0 then
+      if actions.zap == 1 and framesOld >= state.canZapAfterFrames then
+        state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
+        grid:hitBeam(
+            piece, "clean", playerSetting.zap.length, playerSetting.zap.radius)
+      end
+    end
+  end
+
   activeState.onHit = {}
   local playerResetsAfterZap = self._settings.playerResetsAfterZap
   function activeState.onHit.zapHit(grid, player, zapper)
@@ -246,8 +261,7 @@ function Avatar:addObservations(tileSet, world, observations, avatarCount)
   }
 
   local playerLayerView = world:createView(playerViewConfig)
-  local playerLayerViewSpec =
-      playerLayerView:observationSpec(stringId .. '.LAYER')
+  local playerLayerViewSpec = playerLayerView:observationSpec(stringId .. '.LAYER')
   playerLayerViewSpec.func = function(grid)
     return playerLayerView:observation{
         grid = grid,
