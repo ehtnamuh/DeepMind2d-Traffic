@@ -325,24 +325,73 @@ function Avatar:start(grid, locator, hitByVector)
 end
 
 function Avatar:update(grid)
-  grid:userState(self._piece).reward = 0
-  me_position =  grid:position(self._piece)
-  me_position[2] = me_position[2] - 5
-  hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-  print(hit)
+    grid:userState(self._piece).reward = 0
+
     local psActions = grid:userState(self._piece).actions
     if self._isBot then
-        --for _, actionName in ipairs(_PLAYER_ACTION_ORDER) do
-        --  local action = _PLAYER_ACTION_SPEC[actionName]
-        --  psActions[actionName] = random:uniformInt(action.min, action.max)
-        --end
-        --a = grid:transform(self._piece)
-        --for i, v in pairs(a) do
-        --    print(i)
-        --end
-        psActions['move'] = 3
-        psActions['turn'] = 0
-  end
+        --actionName = 'zap'
+        --local action = _PLAYER_ACTION_SPEC[actionName]
+        --psActions[actionName] = random:uniformInt(action.min, action.max)
+        --actionName = 'zap2'
+        --local action = _PLAYER_ACTION_SPEC[actionName]
+        --psActions[actionName] = random:uniformInt(action.min, action.max)
+    ray_dist = 1
+    -- N
+    me_position =  grid:position(self._piece)
+    me_position[2] = me_position[2] - ray_dist
+    hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+
+    -- E
+    me_position =  grid:position(self._piece)
+    me_position[1] = me_position[1] + ray_dist
+    hitE, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+
+    -- S
+    me_position =  grid:position(self._piece)
+    me_position[2] = me_position[2] + ray_dist
+    hitS, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+
+    -- W
+    me_position =  grid:position(self._piece)
+    me_position[1] = me_position[1] - ray_dist
+    hitW, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+
+    -- targets 3,3 and 48,20
+    me_position = grid:position(self._piece)
+    x = 3 - me_position[1]
+    y = 3 - me_position[2]
+    print(x)
+    print(y)
+    orientation = 'N'
+    if(y < 0 and not hitN) then
+        orientation = 'N'
+    else if(not hitE or not hitW)  then
+        r = math.random(0, 1)
+        if(r > 0.5)
+        then
+            orientation = 'W'
+        else
+            orientation = 'E'
+        end
+    end
+    end
+    if(x < 0 and not hitW) then
+        orientation = 'W'
+    else if(not hitN or not hitS)  then
+        r = math.random(0, 1)
+        if(r > 0.5)
+        then
+            orientation = 'N'
+        else
+            orientation = 'S'
+        end
+    end
+    end
+
+    grid:setOrientation(self._piece, orientation)
+    grid:moveRel(self._piece, 'N')
+
+    end
 end
 
 return {Avatar = Avatar}
