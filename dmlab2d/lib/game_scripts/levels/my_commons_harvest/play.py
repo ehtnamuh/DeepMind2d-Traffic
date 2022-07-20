@@ -86,7 +86,6 @@ def _run(rgb_observation: str, config: Mapping[str, str]):
 
 
 def main():
-    print("its me Mario")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--observation', type=str, default='RGB', help='Observation to render')
