@@ -91,7 +91,8 @@ end
 function Avatar:__init__(kwargs)
   self._settings = kwargs.settings
   self._index = kwargs.index
-    self._isBot = kwargs.isBot
+  self._isBot = kwargs.isBot
+  self._mission = 1
   self._activeState = 'player.' .. kwargs.index
   self._waitState = 'player.' .. kwargs.index .. '.wait'
   self._simSetting = kwargs.simSettings
@@ -324,18 +325,17 @@ function Avatar:start(grid, locator, hitByVector)
   return piece
 end
 
-i = 1
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     targets = {{x = 3, y = 3}, {x = 48, y = 20}}
-    switch_target = self:bot_move(grid, targets[i])
+    switch_target = self:bot_move(grid, targets[self._mission])
     if (switch_target) then
         print("target switched")
-        i = math.fmod(i + 1,#targets+1)
-        if (i == 0) then
-            i = 1
+        self._mission = math.fmod(self._mission + 1,#targets+1)
+        if (self._mission == 0) then
+            self._mission = 1
         end
-        print(i)
+        print(self._mission)
     end
 end
 
@@ -373,10 +373,10 @@ function Avatar:bot_move(grid, target)
         x = target.x - me_position[1]
         y = target.y - me_position[2]
 
-        orientation = '-'
+        orientation = 'N'
         if(y < 0 and not hitN) then
             orientation = 'N'
-        else if(orientation == '-' and (not hitE or not hitW))  then
+        else if(hitN and (not hitE or not hitW))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
@@ -388,7 +388,7 @@ function Avatar:bot_move(grid, target)
         end
         if(y > 0 and not hitS) then
             orientation = 'S'
-        else if(orientation == '-' and (not hitE or not hitW))  then
+        else if(hitS and (not hitE or not hitW))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
@@ -400,7 +400,7 @@ function Avatar:bot_move(grid, target)
         end
         if(x < 0 and not hitW) then
             orientation = 'W'
-        else if(orientation == '-' and (not hitN or not hitS))  then
+        else if(hitW and (not hitN or not hitS))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
@@ -413,7 +413,7 @@ function Avatar:bot_move(grid, target)
 
         if(x > 0 and not hitE) then
             orientation = 'E'
-        else if(orientation == '-' and (not hitN or not hitS))  then
+        else if(hitE and (not hitN or not hitS))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
@@ -433,5 +433,6 @@ function Avatar:bot_move(grid, target)
         return false
     end
 end
+
 
 return {Avatar = Avatar}
