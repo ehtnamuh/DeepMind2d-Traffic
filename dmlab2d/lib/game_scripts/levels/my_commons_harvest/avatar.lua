@@ -328,7 +328,12 @@ end
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     targets = {{x = 3, y = 3}, {x = 48, y = 20}}
-    switch_target = self:bot_move(grid, targets[self._mission])
+    local switch_target = self:bot_move_simple(grid, targets[self._mission])
+    --local switch_target = self:bot_move_L1(grid, targets[self._mission])
+    self:switch_mission(switch_target)
+end
+
+function Avatar:switch_mission(switch_target)
     if (switch_target) then
         print("target switched")
         self._mission = math.fmod(self._mission + 1,#targets+1)
@@ -339,17 +344,91 @@ function Avatar:update(grid)
     end
 end
 
-function Avatar:bot_move(grid, target)
-    local psActions = grid:userState(self._piece).actions
-    if self._isBot then
-        -- ZAPPING ACTIONS
-        --actionName = 'zap'
-        --local action = _PLAYER_ACTION_SPEC[actionName]
-        --psActions[actionName] = random:uniformInt(action.min, action.max)
-        --actionName = 'zap2'
-        --local action = _PLAYER_ACTION_SPEC[actionName]
-        --psActions[actionName] = random:uniformInt(action.min, action.max)
+function Avatar:bot_beam()
+    -- ZAPPING ACTIONS
+    actionName = 'zap'
+    local action = _PLAYER_ACTION_SPEC[actionName]
+    psActions[actionName] = random:uniformInt(action.min, action.max)
+    actionName = 'zap2'
+    action = _PLAYER_ACTION_SPEC[actionName]
+    psActions[actionName] = random:uniformInt(action.min, action.max)
+end
 
+function Avatar:L1_distance(source_pos, target_pos)
+    local x = math.abs(target_pos[1] - source_pos[1])
+    local y = math.abs(target_pos[2] - source_pos[2])
+    return x+y
+end
+
+function Avatar:bot_move_L1(grid, target)
+    if self._isBot then
+        --DRIVING AI
+        local ray_dist = 1
+
+        -- targets 3,3 and 48,20
+        local target_pos = grid:position(self._piece)
+        target_pos[1] = target.x - target_pos[1]
+        target_pos[2] = target.y - target_pos[2]
+        local dist = {}
+        local orientations = {}
+
+        -- N
+        local me_position =  grid:position(self._piece)
+        me_position[2] = me_position[2] - ray_dist
+        local hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
+            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
+                orientations = {}
+            end
+            dist[1] = self:L1_distance(me_position, target_pos)
+            orientations[#orientations +1] = 'N'
+        end
+        -- E
+        me_position =  grid:position(self._piece)
+        me_position[1] = me_position[1] + ray_dist
+        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
+            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
+                orientations = {}
+            end
+            dist[1] = self:L1_distance(me_position, target_pos)
+            orientations[#orientations +1] = 'E'
+        end
+        -- S
+        me_position =  grid:position(self._piece)
+        me_position[2] = me_position[2] + ray_dist
+        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
+            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
+                orientations = {}
+            end
+            dist[1] = self:L1_distance(me_position, target_pos)
+            orientations[#orientations +1] = 'S'
+        end
+        -- W
+        me_position =  grid:position(self._piece)
+        me_position[1] = me_position[1] - ray_dist
+        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
+            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
+                orientations = {}
+            end
+            dist[1] = self:L1_distance(me_position, target_pos)
+            orientations[#orientations +1] = 'W'
+        end
+        grid:setOrientation(self._piece, orientations[random:uniformInt(1, #orientations)])
+        grid:moveRel(self._piece, 'N')
+        -- check if goal reached
+        me_position =  grid:position(self._piece)
+        if (self:L1_distance(me_position, target_pos) <= 3 ) then
+            return true
+        end
+        return false
+    end
+end
+
+function Avatar:bot_move_simple(grid, target)
+    if self._isBot then
         --DRIVING AI
         ray_dist = 1
         -- N
@@ -373,58 +452,66 @@ function Avatar:bot_move(grid, target)
         x = target.x - me_position[1]
         y = target.y - me_position[2]
 
-        orientation = 'N'
+        orientation = {}
         if(y < 0 and not hitN) then
-            orientation = 'N'
+            orientation = {}
+            orientation[#orientation+1] = 'N'
         else if(hitN and (not hitE or not hitW))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
-                orientation = 'W'
+                orientation[#orientation+1] = 'W'
             else
-                orientation = 'E'
+                orientation[#orientation+1] = 'E'
             end
         end
         end
         if(y > 0 and not hitS) then
-            orientation = 'S'
+            orientation = {}
+            orientation[#orientation+1] = 'S'
         else if(hitS and (not hitE or not hitW))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
-                orientation = 'W'
+                orientation[#orientation+1] = 'W'
             else
-                orientation = 'E'
+                orientation[#orientation+1] = 'E'
             end
         end
         end
         if(x < 0 and not hitW) then
-            orientation = 'W'
+            orientation = {}
+            orientation[#orientation+1] = 'W'
         else if(hitW and (not hitN or not hitS))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
-                orientation = 'N'
+                orientation[#orientation+1] = 'N'
             else
-                orientation = 'S'
+                orientation[#orientation+1] = 'S'
             end
         end
         end
 
         if(x > 0 and not hitE) then
-            orientation = 'E'
-        else if(hitE and (not hitN or not hitS))  then
+            orientation = {}
+            orientation[#orientation+1] = 'E'
+        else if( hitE and (not hitN or not hitS))  then
             r = math.random(0, 1)
             if(r > 0.5)
             then
-                orientation = 'N'
+                orientation[#orientation+1] = 'N'
             else
-                orientation = 'S'
+                orientation[#orientation+1] = 'S'
             end
         end
         end
-
-        grid:setOrientation(self._piece, orientation)
+        --msg = me_position[1] .. ' '.. me_position[2]
+        --assert(orientation ~= '-',  msg)
+        if(#orientation <= 0) then
+            orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
+        end
+        grid:setOrientation(self._piece, orientation[random:uniformInt(1, #orientation)])
         grid:moveRel(self._piece, 'N')
         -- check if goal reached
         if (x == 0 and y == 0) then
