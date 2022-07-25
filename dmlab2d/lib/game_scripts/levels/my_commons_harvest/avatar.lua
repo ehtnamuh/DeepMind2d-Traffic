@@ -457,11 +457,10 @@ function Avatar:bot_move_simple(grid, target)
             orientation = {}
             orientation[#orientation+1] = 'N'
         else if(hitN and (not hitE or not hitW))  then
-            r = math.random(0, 1)
-            if(r > 0.5)
-            then
+            if (not hitW) then
                 orientation[#orientation+1] = 'W'
-            else
+            end
+            if (not hitE) then
                 orientation[#orientation+1] = 'E'
             end
         end
@@ -470,11 +469,10 @@ function Avatar:bot_move_simple(grid, target)
             orientation = {}
             orientation[#orientation+1] = 'S'
         else if(hitS and (not hitE or not hitW))  then
-            r = math.random(0, 1)
-            if(r > 0.5)
-            then
+            if (not hitW) then
                 orientation[#orientation+1] = 'W'
-            else
+            end
+            if (not hitE) then
                 orientation[#orientation+1] = 'E'
             end
         end
@@ -483,11 +481,10 @@ function Avatar:bot_move_simple(grid, target)
             orientation = {}
             orientation[#orientation+1] = 'W'
         else if(hitW and (not hitN or not hitS))  then
-            r = math.random(0, 1)
-            if(r > 0.5)
-            then
+            if (not hitN) then
                 orientation[#orientation+1] = 'N'
-            else
+            end
+            if (not hitS) then
                 orientation[#orientation+1] = 'S'
             end
         end
@@ -497,22 +494,22 @@ function Avatar:bot_move_simple(grid, target)
             orientation = {}
             orientation[#orientation+1] = 'E'
         else if( hitE and (not hitN or not hitS))  then
-            r = math.random(0, 1)
-            if(r > 0.5)
-            then
+            if (not hitN) then
                 orientation[#orientation+1] = 'N'
-            else
+            end
+            if (not hitS) then
                 orientation[#orientation+1] = 'S'
             end
         end
         end
-        --msg = me_position[1] .. ' '.. me_position[2]
-        --assert(orientation ~= '-',  msg)
+
+        -- if no move selected then select a random move
         if(#orientation <= 0) then
             orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
         end
         grid:setOrientation(self._piece, orientation[random:uniformInt(1, #orientation)])
         grid:moveRel(self._piece, 'N')
+
         -- check if goal reached
         if (x == 0 and y == 0) then
             return true
