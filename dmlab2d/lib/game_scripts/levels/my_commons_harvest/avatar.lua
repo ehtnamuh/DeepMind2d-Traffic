@@ -355,9 +355,11 @@ function Avatar:bot_beam()
 end
 
 function Avatar:L1_distance(source_pos, target_pos)
-    local x = math.abs(target_pos[1] - source_pos[1])
-    local y = math.abs(target_pos[2] - source_pos[2])
-    return x+y
+    return math.abs(target_pos[1] - source_pos[1])+math.abs(target_pos[2] - source_pos[2])
+end
+
+function Avatar:L2_distance(source_pos, target_pos)
+    return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
 end
 
 function Avatar:bot_move_L1(grid, target)
@@ -518,5 +520,15 @@ function Avatar:bot_move_simple(grid, target)
     end
 end
 
+function Avatar:bot_move_A_star(grid, target)
+    local me_position = grid:position(self._piece)
+    local discovered = {}
+    local visited = {}
+    local cost = {}
+    --traversal method
+    -- up down left right
+    -- discover up down left right
+    --
+end
 
 return {Avatar = Avatar}
