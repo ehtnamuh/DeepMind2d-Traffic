@@ -520,15 +520,20 @@ function Avatar:bot_move_simple(grid, target)
     end
 end
 
+
 function Avatar:bot_move_A_star(grid, target)
     local me_position = grid:position(self._piece)
     local discovered = {}
     local visited = {}
     local cost = {}
-    --traversal method
+    -- traversal method
     -- up down left right
     -- discover up down left right
     --
+end
+
+function Avatar:valid_tile(grid,position)
+
 end
 
 return {Avatar = Avatar}
