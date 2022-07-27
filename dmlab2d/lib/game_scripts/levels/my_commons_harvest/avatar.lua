@@ -154,7 +154,6 @@ function Avatar:addPlayerCallbacks(callbacks)
       grid:moveRel(piece, _COMPASS[actions.move])
     end
     grid:hitBeam(piece, "direction", 1, 0)
-    --grid:hitBeam(piece, "zapHit2", 3, 0)
   end
 
   function activeState.onUpdate.zap(grid, piece, framesOld)
@@ -189,20 +188,24 @@ function Avatar:addPlayerCallbacks(callbacks)
     return true
   end
 
-    function activeState.onHit.zapHit2(grid, player, zapper)
-        print("Hello There")
-        local zapperState = grid:userState(zapper)
-        local playerState = grid:userState(player)
-        zapperState.reward = zapperState.reward + zapperState.rewardForZapping
-        playerState.reward = playerState.reward + playerState.rewardForBeingZapped
-        playerState.hitByVector(zapperState.index):add(1)
-        if playerResetsAfterZap then
+  function activeState.onHit.zapHit2(grid, player, zapper)
+      local zapperState = grid:userState(zapper)
+      local playerState = grid:userState(player)
+      zapperState.reward = zapperState.reward + zapperState.rewardForZapping
+      playerState.reward = playerState.reward + playerState.rewardForBeingZapped
+      playerState.hitByVector(zapperState.index):add(1)
+      if playerResetsAfterZap then
           grid:setState(player, self._waitState)
-        end
-        -- Beams do not pass through zapped players.
-        return true
+      end
+      -- Beams do not pass through zapped players.
+      return false
   end
-
+  function activeState.onHit.direction(grid, player, zapper)
+      local zapperState = grid:userState(zapper)
+      --local playerState = grid:userState(player)
+      grid:hitBeam(
+            zapper, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
+  end
 
   local waitState = {}
   waitState.respawnUpdate = function(grid, player, frames)
@@ -331,6 +334,7 @@ function Avatar:update(grid)
     local switch_target = self:bot_move_simple(grid, targets[self._mission])
     --local switch_target = self:bot_move_L1(grid, targets[self._mission])
     self:switch_mission(switch_target)
+    self:bot_beam(grid)
 end
 
 function Avatar:switch_mission(switch_target)
@@ -344,14 +348,26 @@ function Avatar:switch_mission(switch_target)
     end
 end
 
-function Avatar:bot_beam()
+function Avatar:bot_beam(grid)
     -- ZAPPING ACTIONS
-    actionName = 'zap'
-    local action = _PLAYER_ACTION_SPEC[actionName]
-    psActions[actionName] = random:uniformInt(action.min, action.max)
-    actionName = 'zap2'
-    action = _PLAYER_ACTION_SPEC[actionName]
-    psActions[actionName] = random:uniformInt(action.min, action.max)
+    --actionName = 'zap'
+    --local action = _PLAYER_ACTION_SPEC[actionName]
+    --psActions[actionName] = random:uniformInt(action.min, action.max)
+    --local psActions = grid:userState(self._piece).actions
+    --local actionName = 'zap2'
+    --local action = _PLAYER_ACTION_SPEC[actionName]
+    --local me_position =  grid:position(self._piece)
+    --me_position[2] = me_position[2] - 1
+    ----me_position = grid:toRelativePosition(self._piece, me_position)
+    --print(grid:toRelativePosition(self._piece, me_position).x)
+    --print(grid:toRelativePosition(self._piece, grid:position(self._piece)).x)
+    --local hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),
+    --        me_position)
+    --print(hitN)
+    --if (hitN)then
+    --     psActions[actionName] = action.max
+    --end
+    --psActions[actionName] = random:uniformInt(action.min, action.max)
 end
 
 function Avatar:L1_distance(source_pos, target_pos)
@@ -520,7 +536,6 @@ function Avatar:bot_move_simple(grid, target)
     end
 end
 
-
 function Avatar:bot_move_A_star(grid, target)
     local me_position = grid:position(self._piece)
     local discovered = {}
@@ -533,7 +548,10 @@ function Avatar:bot_move_A_star(grid, target)
 end
 
 function Avatar:valid_tile(grid,position)
-
+    if(grid:queryPosition(position) == nil) then
+        return true
+    end
+    return false
 end
 
 return {Avatar = Avatar}
