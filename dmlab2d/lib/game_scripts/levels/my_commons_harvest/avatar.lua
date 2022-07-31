@@ -20,7 +20,6 @@ local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
 
-
 local _COMPASS = {'N', 'E', 'S', 'W'}
 
 local _PLAYER_NAMES = {
@@ -335,16 +334,17 @@ function Avatar:update(grid)
     --local switch_target = self:bot_move_L1(grid, targets[self._mission])
     self:switch_mission(switch_target)
     self:bot_beam(grid)
+    if(self._isBot) then
+        self:walkable_nodes(grid, grid:position(self._piece))
+    end
 end
 
 function Avatar:switch_mission(switch_target)
     if (switch_target) then
-        print("target switched")
         self._mission = math.fmod(self._mission + 1,#targets+1)
         if (self._mission == 0) then
             self._mission = 1
         end
-        print(self._mission)
     end
 end
 
@@ -536,11 +536,79 @@ function Avatar:bot_move_simple(grid, target)
     end
 end
 
+function table.shallow_copy(t)
+  local t2 = {}
+  for k,v in pairs(t) do
+    t2[k] = v
+  end
+  return t2
+end
+
+function Avatar:omnidirectional_ray_cast(grid, position, ray_dist)
+    local hit = {N = false, S = false, E = false, W = false }
+    -- N
+    local me_position = table.shallow_copy(position)
+    me_position[2] = me_position[2] - ray_dist
+    hit.N, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
+    -- E
+    me_position = table.shallow_copy(position)
+    me_position[1] = me_position[1] + ray_dist
+    hit.E, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
+    -- S
+    me_position = table.shallow_copy(position)
+    me_position[2] = me_position[2] + ray_dist
+    hit.S, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
+    -- W
+    me_position = table.shallow_copy(position)
+    me_position[1] = me_position[1] - ray_dist
+    hit.W, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
+    return hit
+end
+
+function Avatar:orientation_to_position(position, orientation)
+    local me_position = {}
+    -- N
+    if(orientation == 'N') then
+        me_position = table.shallow_copy(position)
+        me_position[2] = me_position[2] - ray_dist
+        return me_position
+    end
+    -- E
+    if(orientation == 'E') then
+        me_position = table.shallow_copy(position)
+        me_position[1] = me_position[1] + ray_dist
+    end
+    -- S
+    if(orientation == 'S') then
+        me_position = table.shallow_copy(position)
+        me_position[2] = me_position[2] + ray_dist
+    end
+    -- W
+    if(orientation == 'W') then
+        me_position = table.shallow_copy(position)
+        me_position[1] = me_position[1] - ray_dist
+    end
+    return me_position
+end
+
+function Avatar:walkable_nodes(grid, position)
+    local walkable_nodes = {}
+    local hits = self:omnidirectional_ray_cast(grid, position, 1)
+    for key,v in pairs(hits) do
+        if (v) then
+            print(self:orientation_to_position(position, key)[1])
+        end
+    end
+
+end
+
 function Avatar:bot_move_A_star(grid, target)
     local me_position = grid:position(self._piece)
     local discovered = {}
     local visited = {}
-    local cost = {}
+    local parent = {}
+    local f_cost = {}
+    local g_cost = {}
     -- traversal method
     -- up down left right
     -- discover up down left right
