@@ -35,25 +35,7 @@ function AvatarAI:switch_mission(switch_target)
 end
 
 function AvatarAI:bot_beam(grid)
-    -- ZAPPING ACTIONS
-    --actionName = 'zap'
-    --local action = _PLAYER_ACTION_SPEC[actionName]
-    --psActions[actionName] = random:uniformInt(action.min, action.max)
-    --local psActions = grid:userState(self._piece).actions
-    --local actionName = 'zap2'
-    --local action = _PLAYER_ACTION_SPEC[actionName]
-    --local me_position =  grid:position(self._piece)
-    --me_position[2] = me_position[2] - 1
-    ----me_position = grid:toRelativePosition(self._piece, me_position)
-    --print(grid:toRelativePosition(self._piece, me_position).x)
-    --print(grid:toRelativePosition(self._piece, grid:position(self._piece)).x)
-    --local hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),
-    --        me_position)
-    --print(hitN)
-    --if (hitN)then
-    --     psActions[actionName] = action.max
-    --end
-    --psActions[actionName] = random:uniformInt(action.min, action.max)
+    --TODO:
 end
 
 function AvatarAI:L1_distance(source_pos, target_pos)
@@ -66,9 +48,11 @@ end
 
 function AvatarAI:bot_move_simple(grid, target)
     --DRIVING AI
-    ray_dist = 1
-    -- N
+    local ray_dist = 1
     local me_position =  grid:position(self._piece)
+    local hits = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
+
+    -- N
     me_position[2] = me_position[2] - ray_dist
     hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
     -- E
@@ -90,10 +74,10 @@ function AvatarAI:bot_move_simple(grid, target)
     local y = target.y - me_position[2]
 
     local orientation = {}
-    if(y < 0 and not hitN) then
+    if(y < 0 and not hits.N) then
         orientation = {}
         orientation[#orientation+1] = 'N'
-    else if(hitN and (not hitE or not hitW))  then
+    else if(hits.N and (not hitE or not hitW))  then
         if (not hitW) then
             orientation[#orientation+1] = 'W'
         end
