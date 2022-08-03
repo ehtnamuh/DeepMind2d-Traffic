@@ -19,9 +19,11 @@ local tensor = require 'system.tensor'
 local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
+local avatarai = require 'avatar_ai'
 
+
+local avatar_ai = {}
 local _COMPASS = {'N', 'E', 'S', 'W'}
-
 local _PLAYER_NAMES = {
     'blue',
     'mint',
@@ -44,21 +46,18 @@ local _PLAYER_NAMES = {
     'red',
     'teal',
 }
-
 local _PLAYER_ACTION_ORDER = {
     'move',
     'turn',
     'zap',
     'zap2',
 }
-
 local _PLAYER_ACTION_SPEC = {
     move = {default = 0, min = 0, max = #_COMPASS},
     turn = {default = 0, min = -1, max = 1},
     zap = {default = 0, min = 0, max = 1},
     zap2 = {default=0, min=0, max=1}
 }
-
 
 local Avatar = class.Class()
 
@@ -91,7 +90,6 @@ function Avatar:__init__(kwargs)
   self._settings = kwargs.settings
   self._index = kwargs.index
   self._isBot = kwargs.isBot
-  self._mission = 1
   self._activeState = 'player.' .. kwargs.index
   self._waitState = 'player.' .. kwargs.index .. '.wait'
   self._simSetting = kwargs.simSettings
@@ -324,302 +322,24 @@ function Avatar:start(grid, locator, hitByVector)
       rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
   self._piece = piece
+  self._avatar_ai = avatarai.AvatarAI{piece = self._piece}
   return piece
 end
 
+
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
-    targets = {{x = 3, y = 3}, {x = 48, y = 20}}
-    local switch_target = self:bot_move_simple(grid, targets[self._mission])
-    --local switch_target = self:bot_move_L1(grid, targets[self._mission])
-    self:switch_mission(switch_target)
-    self:bot_beam(grid)
-    if(self._isBot) then
-        self:walkable_nodes(grid, grid:position(self._piece))
+    --self._avatar_ai:hi()
+    if (self._isBot) then
+        local switch_target = self._avatar_ai:bot_move_simple(grid,
+                self._avatar_ai._targets[self._avatar_ai._mission])
+        self._avatar_ai:switch_mission(switch_target)
+        self._avatar_ai:bot_beam(grid)
     end
-end
-
-function Avatar:switch_mission(switch_target)
-    if (switch_target) then
-        self._mission = math.fmod(self._mission + 1,#targets+1)
-        if (self._mission == 0) then
-            self._mission = 1
-        end
-    end
-end
-
-function Avatar:bot_beam(grid)
-    -- ZAPPING ACTIONS
-    --actionName = 'zap'
-    --local action = _PLAYER_ACTION_SPEC[actionName]
-    --psActions[actionName] = random:uniformInt(action.min, action.max)
-    --local psActions = grid:userState(self._piece).actions
-    --local actionName = 'zap2'
-    --local action = _PLAYER_ACTION_SPEC[actionName]
-    --local me_position =  grid:position(self._piece)
-    --me_position[2] = me_position[2] - 1
-    ----me_position = grid:toRelativePosition(self._piece, me_position)
-    --print(grid:toRelativePosition(self._piece, me_position).x)
-    --print(grid:toRelativePosition(self._piece, grid:position(self._piece)).x)
-    --local hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),
-    --        me_position)
-    --print(hitN)
-    --if (hitN)then
-    --     psActions[actionName] = action.max
+    --if(self._isBot) then
+    --    avatar_ai:walkable_nodes(grid, grid:position(self._piece))
     --end
-    --psActions[actionName] = random:uniformInt(action.min, action.max)
 end
 
-function Avatar:L1_distance(source_pos, target_pos)
-    return math.abs(target_pos[1] - source_pos[1])+math.abs(target_pos[2] - source_pos[2])
-end
-
-function Avatar:L2_distance(source_pos, target_pos)
-    return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
-end
-
-function Avatar:bot_move_L1(grid, target)
-    if self._isBot then
-        --DRIVING AI
-        local ray_dist = 1
-
-        -- targets 3,3 and 48,20
-        local target_pos = grid:position(self._piece)
-        target_pos[1] = target.x - target_pos[1]
-        target_pos[2] = target.y - target_pos[2]
-        local dist = {}
-        local orientations = {}
-
-        -- N
-        local me_position =  grid:position(self._piece)
-        me_position[2] = me_position[2] - ray_dist
-        local hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
-            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
-                orientations = {}
-            end
-            dist[1] = self:L1_distance(me_position, target_pos)
-            orientations[#orientations +1] = 'N'
-        end
-        -- E
-        me_position =  grid:position(self._piece)
-        me_position[1] = me_position[1] + ray_dist
-        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
-            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
-                orientations = {}
-            end
-            dist[1] = self:L1_distance(me_position, target_pos)
-            orientations[#orientations +1] = 'E'
-        end
-        -- S
-        me_position =  grid:position(self._piece)
-        me_position[2] = me_position[2] + ray_dist
-        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
-            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
-                orientations = {}
-            end
-            dist[1] = self:L1_distance(me_position, target_pos)
-            orientations[#orientations +1] = 'S'
-        end
-        -- W
-        me_position =  grid:position(self._piece)
-        me_position[1] = me_position[1] - ray_dist
-        hit, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        if (#dist <= 0 or (not hit and dist[1] >= self:L1_distance(me_position, target_pos))) then
-            if(#dist > 0 and dist[1] > self:L1_distance(me_position, target_pos)) then
-                orientations = {}
-            end
-            dist[1] = self:L1_distance(me_position, target_pos)
-            orientations[#orientations +1] = 'W'
-        end
-        grid:setOrientation(self._piece, orientations[random:uniformInt(1, #orientations)])
-        grid:moveRel(self._piece, 'N')
-        -- check if goal reached
-        me_position =  grid:position(self._piece)
-        if (self:L1_distance(me_position, target_pos) <= 3 ) then
-            return true
-        end
-        return false
-    end
-end
-
-function Avatar:bot_move_simple(grid, target)
-    if self._isBot then
-        --DRIVING AI
-        ray_dist = 1
-        -- N
-        me_position =  grid:position(self._piece)
-        me_position[2] = me_position[2] - ray_dist
-        hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        -- E
-        me_position =  grid:position(self._piece)
-        me_position[1] = me_position[1] + ray_dist
-        hitE, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        -- S
-        me_position =  grid:position(self._piece)
-        me_position[2] = me_position[2] + ray_dist
-        hitS, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        -- W
-        me_position =  grid:position(self._piece)
-        me_position[1] = me_position[1] - ray_dist
-        hitW, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-        -- targets 3,3 and 48,20
-        me_position = grid:position(self._piece)
-        x = target.x - me_position[1]
-        y = target.y - me_position[2]
-
-        orientation = {}
-        if(y < 0 and not hitN) then
-            orientation = {}
-            orientation[#orientation+1] = 'N'
-        else if(hitN and (not hitE or not hitW))  then
-            if (not hitW) then
-                orientation[#orientation+1] = 'W'
-            end
-            if (not hitE) then
-                orientation[#orientation+1] = 'E'
-            end
-        end
-        end
-        if(y > 0 and not hitS) then
-            orientation = {}
-            orientation[#orientation+1] = 'S'
-        else if(hitS and (not hitE or not hitW))  then
-            if (not hitW) then
-                orientation[#orientation+1] = 'W'
-            end
-            if (not hitE) then
-                orientation[#orientation+1] = 'E'
-            end
-        end
-        end
-        if(x < 0 and not hitW) then
-            orientation = {}
-            orientation[#orientation+1] = 'W'
-        else if(hitW and (not hitN or not hitS))  then
-            if (not hitN) then
-                orientation[#orientation+1] = 'N'
-            end
-            if (not hitS) then
-                orientation[#orientation+1] = 'S'
-            end
-        end
-        end
-
-        if(x > 0 and not hitE) then
-            orientation = {}
-            orientation[#orientation+1] = 'E'
-        else if( hitE and (not hitN or not hitS))  then
-            if (not hitN) then
-                orientation[#orientation+1] = 'N'
-            end
-            if (not hitS) then
-                orientation[#orientation+1] = 'S'
-            end
-        end
-        end
-
-        -- if no move selected then select a random move
-        if(#orientation <= 0) then
-            orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
-        end
-        grid:setOrientation(self._piece, orientation[random:uniformInt(1, #orientation)])
-        grid:moveRel(self._piece, 'N')
-
-        -- check if goal reached
-        if (x == 0 and y == 0) then
-            return true
-        end
-        return false
-    end
-end
-
-function table.shallow_copy(t)
-  local t2 = {}
-  for k,v in pairs(t) do
-    t2[k] = v
-  end
-  return t2
-end
-
-function Avatar:omnidirectional_ray_cast(grid, position, ray_dist)
-    local hit = {N = false, S = false, E = false, W = false }
-    -- N
-    local me_position = table.shallow_copy(position)
-    me_position[2] = me_position[2] - ray_dist
-    hit.N, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- E
-    me_position = table.shallow_copy(position)
-    me_position[1] = me_position[1] + ray_dist
-    hit.E, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- S
-    me_position = table.shallow_copy(position)
-    me_position[2] = me_position[2] + ray_dist
-    hit.S, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- W
-    me_position = table.shallow_copy(position)
-    me_position[1] = me_position[1] - ray_dist
-    hit.W, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-    return hit
-end
-
-function Avatar:orientation_to_position(position, orientation)
-    local me_position = {}
-    -- N
-    if(orientation == 'N') then
-        me_position = table.shallow_copy(position)
-        me_position[2] = me_position[2] - ray_dist
-        return me_position
-    end
-    -- E
-    if(orientation == 'E') then
-        me_position = table.shallow_copy(position)
-        me_position[1] = me_position[1] + ray_dist
-    end
-    -- S
-    if(orientation == 'S') then
-        me_position = table.shallow_copy(position)
-        me_position[2] = me_position[2] + ray_dist
-    end
-    -- W
-    if(orientation == 'W') then
-        me_position = table.shallow_copy(position)
-        me_position[1] = me_position[1] - ray_dist
-    end
-    return me_position
-end
-
-function Avatar:walkable_nodes(grid, position)
-    local walkable_nodes = {}
-    local hits = self:omnidirectional_ray_cast(grid, position, 1)
-    for key,v in pairs(hits) do
-        if (v) then
-            print(self:orientation_to_position(position, key)[1])
-        end
-    end
-
-end
-
-function Avatar:bot_move_A_star(grid, target)
-    local me_position = grid:position(self._piece)
-    local discovered = {}
-    local visited = {}
-    local parent = {}
-    local f_cost = {}
-    local g_cost = {}
-    -- traversal method
-    -- up down left right
-    -- discover up down left right
-    --
-end
-
-function Avatar:valid_tile(grid,position)
-    if(grid:queryPosition(position) == nil) then
-        return true
-    end
-    return false
-end
 
 return {Avatar = Avatar}
