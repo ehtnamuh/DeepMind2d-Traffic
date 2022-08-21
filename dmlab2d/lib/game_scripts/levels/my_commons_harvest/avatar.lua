@@ -336,9 +336,9 @@ function Avatar:update(grid)
         self._avatar_ai:switch_mission(switch_target)
         self._avatar_ai:bot_beam(grid)
     end
-    --if(self._isBot) then
-    --    avatar_ai:walkable_nodes(grid, grid:position(self._piece))
-    --end
+    if(self._isBot) then
+        self._avatar_ai:walkable_nodes(grid, grid:position(self._piece))
+    end
 end
 
 

@@ -20,11 +20,6 @@ function AvatarAI:__init__(kwargs)
     self._targets = {{x = 3, y = 3}, {x = 48, y = 20}}
 end
 
-function AvatarAI:hi()
-    print("hi")
-end
-
-
 function AvatarAI:switch_mission(switch_target)
     if (switch_target) then
         self._mission = math.fmod(self._mission + 1,#self._targets+1)
@@ -191,9 +186,15 @@ function AvatarAI:walkable_nodes(grid, position)
     local hits = self:omnidirectional_ray_cast(grid, position, 1)
     for key,v in pairs(hits) do
         if (v) then
-            print(self:orientation_to_position(position, key)[1])
+            --table.insert(walkable_nodes, key, v)
+            walkable_nodes[key] = v
+            --print(self:orientation_to_position(position, key)[1])
         end
     end
+    for key,v in pairs(hits) do
+        print(self:orientation_to_position(position, key)[1])
+    end
+
 
 end
 
