@@ -4,7 +4,7 @@ load("//dmlab2d/lib/testing:lua_testing.bzl", "dmlab2d_lua_level_test")
 licenses(["notice"])
 
 filegroup(
-    name = "my_commons_harvest",
+    name = "traffic_norms",
     srcs = glob(["*.lua"]),
     visibility = ["//visibility:public"],
 )

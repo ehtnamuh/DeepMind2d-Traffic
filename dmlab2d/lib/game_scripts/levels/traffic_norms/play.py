@@ -96,7 +96,7 @@ def main():
 
     args = parser.parse_args()
     if 'levelName' not in args.settings:
-        args.settings['levelName'] = 'my_commons_harvest'
+        args.settings['levelName'] = 'traffic_norms'
     if 'numPlayers' not in args.settings:
         args.settings['numPlayers'] = args.players
     for k in args.settings:

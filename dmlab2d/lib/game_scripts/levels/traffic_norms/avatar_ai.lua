@@ -186,20 +186,14 @@ function AvatarAI:walkable_nodes(grid, position)
     local hits = self:omnidirectional_ray_cast(grid, position, 1)
     for key,v in pairs(hits) do
         if (v) then
-            --table.insert(walkable_nodes, key, v)
-            walkable_nodes[key] = v
+            walkable_nodes[key] = self:orientation_to_position(position, key)
             --print(self:orientation_to_position(position, key)[1])
         end
     end
-    for key,v in pairs(hits) do
-        print(self:orientation_to_position(position, key)[1])
-    end
-
-
 end
 
-function AvatarAI:bot_move_A_star(grid, target)
-    local me_position = grid:position(self._piece)
+function AvatarAI:bot_move_A_star(grid, piece,target)
+    local me_position = grid:position(piece)
     local discovered = {}
     local visited = {}
     local parent = {}
