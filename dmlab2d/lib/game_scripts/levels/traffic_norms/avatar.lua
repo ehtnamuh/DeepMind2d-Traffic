@@ -63,282 +63,294 @@ local Avatar = class.Class()
 
 -- Class function returning default settings.
 function Avatar.defaultSettings()
-  return {
-      minFramesBetweenZaps = 2,
-      playerResetsAfterZap = false,
-      rewardForZapping = -1,
-      rewardForBeingZapped = -50,
-      rewardForEatingLastAppleInRadius = 0,
-      zap = {
-          radius = 1,
-          length = 5
-      },
-      view = {
-          left = 5,
-          right = 5,
-          forward = 9,
-          backward = 1,
-          centered = false,
-          otherPlayersLookSame = false,
-          followPlayer = true,
-          thisPlayerLooksBlue = true,
-      },
-  }
+    return {
+        minFramesBetweenZaps = 2,
+        playerResetsAfterZap = false,
+        rewardForZapping = -1,
+        rewardForBeingZapped = -50,
+        rewardForEatingLastAppleInRadius = 0,
+        zap = {
+            radius = 1,
+            length = 5
+        },
+        view = {
+            left = 5,
+            right = 5,
+            forward = 9,
+            backward = 1,
+            centered = false,
+            otherPlayersLookSame = false,
+            followPlayer = true,
+            thisPlayerLooksBlue = true,
+        },
+    }
 end
 
 function Avatar:__init__(kwargs)
-  self._settings = kwargs.settings
-  self._index = kwargs.index
-  self._isBot = kwargs.isBot
-  self._activeState = 'player.' .. kwargs.index
-  self._waitState = 'player.' .. kwargs.index .. '.wait'
-  self._simSetting = kwargs.simSettings
+    self._settings = kwargs.settings
+    self._index = kwargs.index
+    self._isBot = kwargs.isBot
+    self._activeState = 'player.' .. kwargs.index
+    self._waitState = 'player.' .. kwargs.index .. '.wait'
+    self._simSetting = kwargs.simSettings
+    -- mission switching
+    self._missionIndex = 1
+    self._targets = {{x = 3, y = 3}, {x = 48, y = 20}}
 end
 
 function Avatar:addConfigs(worldConfig)
-  local id = self._index
-  worldConfig.states[self._activeState] = {
-      groups = {'players'},
-      layer = 'pieces',
-      sprite = 'Player.' .. id,
-      contact = 'avatar',
-  }
-  worldConfig.states[self._waitState] = {
-      groups = {'players', 'players.wait'},
-  }
+    local id = self._index
+    worldConfig.states[self._activeState] = {
+        groups = {'players'},
+        layer = 'pieces',
+        sprite = 'Player.' .. id,
+        contact = 'avatar',
+    }
+    worldConfig.states[self._waitState] = {
+        groups = {'players', 'players.wait'},
+    }
 end
 
 function Avatar:addSprites(tileSet)
-  local id = self._index
-  tileSet:addShape('Player.' .. id, images.playerShape(_PLAYER_NAMES[id]))
+    local id = self._index
+    tileSet:addShape('Player.' .. id, images.playerShape(_PLAYER_NAMES[id]))
 end
 
 function Avatar:addReward(grid, amount)
-  local ps = grid:userState(self._piece)
-  ps.reward = ps.reward + amount
+    local ps = grid:userState(self._piece)
+    ps.reward = ps.reward + amount
 end
 
 function Avatar:getReward(grid)
-  return grid:userState(self._piece).reward
+    return grid:userState(self._piece).reward
 end
 
 function Avatar:discreteActionSpec(actSpec)
-  self._actionSpecStartOffset = #actSpec
-  local id = tostring(self._index)
-  for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
-    local action = _PLAYER_ACTION_SPEC[actionName]
-    table.insert(actSpec, {
-        name = id .. '.' .. actionName,
-        min = action.min,
-        max = action.max,
-    })
-  end
+    self._actionSpecStartOffset = #actSpec
+    local id = tostring(self._index)
+    for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
+        local action = _PLAYER_ACTION_SPEC[actionName]
+        table.insert(actSpec, {
+            name = id .. '.' .. actionName,
+            min = action.min,
+            max = action.max,
+        })
+    end
 end
 
 
 function Avatar:addPlayerCallbacks(callbacks)
-  local id = self._index
-  local playerSetting = self._settings
-  local activeState = {}
-  activeState.onUpdate = {}
-  function activeState.onUpdate.move(grid, piece)
-    local state = grid:userState(piece)
-    local actions = state.actions
-    if actions.turn ~= 0 then
-      grid:turn(piece, actions.turn)
+    local id = self._index
+    local playerSetting = self._settings
+    local activeState = {}
+    activeState.onUpdate = {}
+    function activeState.onUpdate.move(grid, piece)
+        local state = grid:userState(piece)
+        local actions = state.actions
+        if actions.turn ~= 0 then
+            grid:turn(piece, actions.turn)
+        end
+        if actions.move ~= 0 then
+            grid:moveRel(piece, _COMPASS[actions.move])
+        end
+        grid:hitBeam(piece, "direction", 1, 0)
     end
-    if actions.move ~= 0 then
-      grid:moveRel(piece, _COMPASS[actions.move])
+
+    function activeState.onUpdate.zap(grid, piece, framesOld)
+        local state = grid:userState(piece)
+        local actions = state.actions
+
+        if playerSetting.minFramesBetweenZaps >= 0 then
+            if actions.zap == 1 and framesOld >= state.canZapAfterFrames then
+                state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
+                grid:hitBeam(
+                        piece, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
+            end
+            if actions.zap2 == 1 and framesOld >= state.canZapAfterFrames then
+                state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
+                grid:hitBeam(
+                        piece, "zapHit2", playerSetting.zap.length, playerSetting.zap.radius)
+            end
+        end
     end
-    grid:hitBeam(piece, "direction", 1, 0)
-  end
+    activeState.onHit = {}
+    local playerResetsAfterZap = self._settings.playerResetsAfterZap
+    function activeState.onHit.zapHit(grid, player, zapper)
+        local zapperState = grid:userState(zapper)
+        local playerState = grid:userState(player)
+        zapperState.reward = zapperState.reward + zapperState.rewardForZapping
+        playerState.reward = playerState.reward + playerState.rewardForBeingZapped
+        playerState.hitByVector(zapperState.index):add(1)
+        if playerResetsAfterZap then
+            grid:setState(player, self._waitState)
+        end
+        -- Beams do not pass through zapped players.
+        return true
+    end
 
-  function activeState.onUpdate.zap(grid, piece, framesOld)
-    local state = grid:userState(piece)
-    local actions = state.actions
-
-    if playerSetting.minFramesBetweenZaps >= 0 then
-      if actions.zap == 1 and framesOld >= state.canZapAfterFrames then
-        state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
+    function activeState.onHit.zapHit2(grid, player, zapper)
+        local zapperState = grid:userState(zapper)
+        local playerState = grid:userState(player)
+        zapperState.reward = zapperState.reward + zapperState.rewardForZapping
+        playerState.reward = playerState.reward + playerState.rewardForBeingZapped
+        playerState.hitByVector(zapperState.index):add(1)
+        if playerResetsAfterZap then
+            grid:setState(player, self._waitState)
+        end
+        -- Beams do not pass through zapped players.
+        return false
+    end
+    function activeState.onHit.direction(grid, player, zapper)
+        local zapperState = grid:userState(zapper)
+        --local playerState = grid:userState(player)
         grid:hitBeam(
-            piece, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
-      end
-        if actions.zap2 == 1 and framesOld >= state.canZapAfterFrames then
-            state.canZapAfterFrames = framesOld + playerSetting.minFramesBetweenZaps
-        grid:hitBeam(
-            piece, "zapHit2", playerSetting.zap.length, playerSetting.zap.radius)
-      end
+                zapper, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
     end
-  end
-  activeState.onHit = {}
-  local playerResetsAfterZap = self._settings.playerResetsAfterZap
-  function activeState.onHit.zapHit(grid, player, zapper)
-    local zapperState = grid:userState(zapper)
-    local playerState = grid:userState(player)
-    zapperState.reward = zapperState.reward + zapperState.rewardForZapping
-    playerState.reward = playerState.reward + playerState.rewardForBeingZapped
-    playerState.hitByVector(zapperState.index):add(1)
-    if playerResetsAfterZap then
-      grid:setState(player, self._waitState)
+
+    local waitState = {}
+    waitState.respawnUpdate = function(grid, player, frames)
+        grid:teleportToGroup(player, 'spawn.any', self._activeState)
     end
-    -- Beams do not pass through zapped players.
-    return true
-  end
 
-  function activeState.onHit.zapHit2(grid, player, zapper)
-      local zapperState = grid:userState(zapper)
-      local playerState = grid:userState(player)
-      zapperState.reward = zapperState.reward + zapperState.rewardForZapping
-      playerState.reward = playerState.reward + playerState.rewardForBeingZapped
-      playerState.hitByVector(zapperState.index):add(1)
-      if playerResetsAfterZap then
-          grid:setState(player, self._waitState)
-      end
-      -- Beams do not pass through zapped players.
-      return false
-  end
-  function activeState.onHit.direction(grid, player, zapper)
-      local zapperState = grid:userState(zapper)
-      --local playerState = grid:userState(player)
-      grid:hitBeam(
-            zapper, "zapHit", playerSetting.zap.length, playerSetting.zap.radius)
-  end
-
-  local waitState = {}
-  waitState.respawnUpdate = function(grid, player, frames)
-    grid:teleportToGroup(player, 'spawn.any', self._activeState)
-  end
-
-  callbacks[self._activeState] = activeState
-  callbacks[self._waitState] = waitState
+    callbacks[self._activeState] = activeState
+    callbacks[self._waitState] = waitState
 end
 
 function Avatar:discreteActions(grid, actions)
-  local psActions = grid:userState(self._piece).actions
-  for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
-     psActions[actionName] = actions[a + self._actionSpecStartOffset]
-  end
+    local psActions = grid:userState(self._piece).actions
+    for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
+        psActions[actionName] = actions[a + self._actionSpecStartOffset]
+    end
 end
 
 function Avatar:addObservations(tileSet, world, observations, avatarCount)
-  local settings = self._settings
-  local id = self._index
-  local stringId = tostring(id)
-  local playerViewConfig = {
-      left = settings.view.left,
-      right = settings.view.right,
-      forward = settings.view.forward,
-      backward = settings.view.backward,
-      centered = settings.view.centered,
-      set = tileSet,
-      spriteMap = {}
-  }
-
-  if settings.view.otherPlayersLookSame then
-    for otherId = 1, avatarCount do
-      if id == otherId then
-        playerViewConfig.spriteMap['Player.' .. stringId] = 'Player.1'
-      else
-        playerViewConfig.spriteMap['Player.' .. otherId] = 'Player.2'
-      end
-    end
-  elseif settings.view.thisPlayerLooksBlue then
-    for otherId = 1, avatarCount do
-      if id == otherId then
-        playerViewConfig.spriteMap['Player.' .. stringId] = 'Player.1'
-      elseif otherId == 1 then
-        playerViewConfig.spriteMap['Player.' .. otherId] = 'Player.' .. id
-      end
-    end
-  end
-
-  observations[#observations + 1] = {
-      name = stringId .. '.REWARD',
-      type = 'Doubles',
-      shape = {},
-      func = function(grid)
-        return grid:userState(self._piece).reward
-      end
-  }
-
-  observations[#observations + 1] = {
-      name = stringId .. '.POSITION',
-      type = 'Doubles',
-      shape = {2},
-      func = function(grid)
-        return tensor.DoubleTensor(grid:position(self._piece))
-      end
-  }
-
-  local playerLayerView = world:createView(playerViewConfig)
-  local playerLayerViewSpec =
-      playerLayerView:observationSpec(stringId .. '.LAYER')
-  playerLayerViewSpec.func = function(grid)
-    return playerLayerView:observation{
-        grid = grid,
-        piece = settings.view.followPlayer and self._piece or nil,
+    local settings = self._settings
+    local id = self._index
+    local stringId = tostring(id)
+    local playerViewConfig = {
+        left = settings.view.left,
+        right = settings.view.right,
+        forward = settings.view.forward,
+        backward = settings.view.backward,
+        centered = settings.view.centered,
+        set = tileSet,
+        spriteMap = {}
     }
-  end
-  observations[#observations + 1] = playerLayerViewSpec
 
-  local playerView = tile.Scene{
-      shape = playerLayerView:gridSize(),
-      set = tileSet
-  }
+    if settings.view.otherPlayersLookSame then
+        for otherId = 1, avatarCount do
+            if id == otherId then
+                playerViewConfig.spriteMap['Player.' .. stringId] = 'Player.1'
+            else
+                playerViewConfig.spriteMap['Player.' .. otherId] = 'Player.2'
+            end
+        end
+    elseif settings.view.thisPlayerLooksBlue then
+        for otherId = 1, avatarCount do
+            if id == otherId then
+                playerViewConfig.spriteMap['Player.' .. stringId] = 'Player.1'
+            elseif otherId == 1 then
+                playerViewConfig.spriteMap['Player.' .. otherId] = 'Player.' .. id
+            end
+        end
+    end
 
-  local spec = {
-      name = stringId .. '.RGB',
-      type = 'tensor.ByteTensor',
-      shape = playerView:shape(),
-      func = function(grid)
-        local layerObservation = playerLayerView:observation{
+    observations[#observations + 1] = {
+        name = stringId .. '.REWARD',
+        type = 'Doubles',
+        shape = {},
+        func = function(grid)
+            return grid:userState(self._piece).reward
+        end
+    }
+
+    observations[#observations + 1] = {
+        name = stringId .. '.POSITION',
+        type = 'Doubles',
+        shape = {2},
+        func = function(grid)
+            return tensor.DoubleTensor(grid:position(self._piece))
+        end
+    }
+
+    local playerLayerView = world:createView(playerViewConfig)
+    local playerLayerViewSpec =
+    playerLayerView:observationSpec(stringId .. '.LAYER')
+    playerLayerViewSpec.func = function(grid)
+        return playerLayerView:observation{
             grid = grid,
             piece = settings.view.followPlayer and self._piece or nil,
         }
-        return playerView:render(layerObservation)
-      end
-  }
-  observations[#observations + 1] = spec
+    end
+    observations[#observations + 1] = playerLayerViewSpec
+
+    local playerView = tile.Scene{
+        shape = playerLayerView:gridSize(),
+        set = tileSet
+    }
+
+    local spec = {
+        name = stringId .. '.RGB',
+        type = 'tensor.ByteTensor',
+        shape = playerView:shape(),
+        func = function(grid)
+            local layerObservation = playerLayerView:observation{
+                grid = grid,
+                piece = settings.view.followPlayer and self._piece or nil,
+            }
+            return playerView:render(layerObservation)
+        end
+    }
+    observations[#observations + 1] = spec
 end
 
 function Avatar:start(grid, locator, hitByVector)
-  local actions = {}
-  for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
-    local action = _PLAYER_ACTION_SPEC[actionName]
-    actions[actionName] = action.default
-  end
-  local targetTransform = grid:transform(locator)
-  targetTransform.orientation = _COMPASS[random:uniformInt(1, #_COMPASS)]
-  local piece = grid:createPiece(self._activeState, targetTransform)
-  local rewardForLastApple = self._settings.rewardForEatingLastAppleInRadius
-  grid:setUserState(piece, {
-      reward = 0,
-      canZapAfterFrames = 0,
-      actions = actions,
-      index = self._index,
-      hitByVector = hitByVector,
-      rewardForZapping = self._settings.rewardForZapping,
-      rewardForBeingZapped = self._settings.rewardForBeingZapped,
-      rewardForEatingLastAppleInRadius = rewardForLastApple,
+    local actions = {}
+    for a, actionName in ipairs(_PLAYER_ACTION_ORDER) do
+        local action = _PLAYER_ACTION_SPEC[actionName]
+        actions[actionName] = action.default
+    end
+    local targetTransform = grid:transform(locator)
+    targetTransform.orientation = _COMPASS[random:uniformInt(1, #_COMPASS)]
+    local piece = grid:createPiece(self._activeState, targetTransform)
+    local rewardForLastApple = self._settings.rewardForEatingLastAppleInRadius
+    grid:setUserState(piece, {
+        reward = 0,
+        canZapAfterFrames = 0,
+        actions = actions,
+        index = self._index,
+        hitByVector = hitByVector,
+        rewardForZapping = self._settings.rewardForZapping,
+        rewardForBeingZapped = self._settings.rewardForBeingZapped,
+        rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
-  self._piece = piece
-  self._avatar_ai = avatarai.AvatarAI{piece = self._piece}
-  return piece
+    self._piece = piece
+    self._avatar_ai = avatarai.AvatarAI{piece = self._piece}
+    return piece
 end
 
 
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
-    --self._avatar_ai:hi()
     if (self._isBot) then
-        local switch_target = self._avatar_ai:bot_move_simple(grid,
-                self._avatar_ai._targets[self._avatar_ai._mission])
-        self._avatar_ai:switch_mission(switch_target)
+        local orientation = self._avatar_ai:bot_move_simple(grid, self._piece,
+                self._targets[self._missionIndex])
+        grid:setOrientation(self._piece, orientation)
+        grid:moveRel(self._piece, 'N')
+
+        if (self._avatar_ai:CheckGoal(grid, self._piece, self._targets[self._missionIndex])) then
+            self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
+            if (self._missionIndex == 0) then
+                self._missionIndex = 1
+            end
+        end
         self._avatar_ai:bot_beam(grid)
     end
-    if(self._isBot) then
-        self._avatar_ai:walkable_nodes(grid, grid:position(self._piece))
-    end
+    print(grid:position(self._piece))
+
+    --if(self._isBot) then
+    --    self._avatar_ai:walkable_nodes(grid, grid:position(self._piece))
+    --end
 end
 
 

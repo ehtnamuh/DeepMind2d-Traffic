@@ -10,129 +10,13 @@ local random = require 'system.random'
 local AvatarAI = class.Class()
 local _COMPASS = {'N', 'E', 'S', 'W'}
 
-function AvatarAI.defaultSettings()
-    return {}
-end
-
-function AvatarAI:__init__(kwargs)
-    self._piece = kwargs.piece
-    self._mission = 1
-    self._targets = {{x = 3, y = 3}, {x = 48, y = 20}}
-end
-
-function AvatarAI:switch_mission(switch_target)
-    if (switch_target) then
-        self._mission = math.fmod(self._mission + 1,#self._targets+1)
-        if (self._mission == 0) then
-            self._mission = 1
-        end
-    end
-end
-
 function AvatarAI:bot_beam(grid)
     --TODO:
 end
 
-function AvatarAI:L1_distance(source_pos, target_pos)
-    return math.abs(target_pos[1] - source_pos[1])+math.abs(target_pos[2] - source_pos[2])
-end
 
-function AvatarAI:L2_distance(source_pos, target_pos)
-    return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
-end
-
-function AvatarAI:bot_move_simple(grid, target)
-    --DRIVING AI
-    local ray_dist = 1
-    local me_position =  grid:position(self._piece)
-    local hits = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
-
-    -- N
-    me_position[2] = me_position[2] - ray_dist
-    hitN, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-    -- E
-    me_position =  grid:position(self._piece)
-    me_position[1] = me_position[1] + ray_dist
-    hitE, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-    -- S
-    me_position =  grid:position(self._piece)
-    me_position[2] = me_position[2] + ray_dist
-    hitS, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-    -- W
-    me_position =  grid:position(self._piece)
-    me_position[1] = me_position[1] - ray_dist
-    hitW, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-
-    -- raw distance to target
-    me_position = grid:position(self._piece)
-    local x = target.x - me_position[1]
-    local y = target.y - me_position[2]
-
-    local orientation = {}
-    if(y < 0 and not hits.N) then
-        orientation = {}
-        orientation[#orientation+1] = 'N'
-    else if(hits.N and (not hitE or not hitW))  then
-        if (not hitW) then
-            orientation[#orientation+1] = 'W'
-        end
-        if (not hitE) then
-            orientation[#orientation+1] = 'E'
-        end
-    end
-    end
-    if(y > 0 and not hitS) then
-        orientation = {}
-        orientation[#orientation+1] = 'S'
-    else if(hitS and (not hitE or not hitW))  then
-        if (not hitW) then
-            orientation[#orientation+1] = 'W'
-        end
-        if (not hitE) then
-            orientation[#orientation+1] = 'E'
-        end
-    end
-    end
-    if(x < 0 and not hitW) then
-        orientation = {}
-        orientation[#orientation+1] = 'W'
-    else if(hitW and (not hitN or not hitS))  then
-        if (not hitN) then
-            orientation[#orientation+1] = 'N'
-        end
-        if (not hitS) then
-            orientation[#orientation+1] = 'S'
-        end
-    end
-    end
-
-    if(x > 0 and not hitE) then
-        orientation = {}
-        orientation[#orientation+1] = 'E'
-    else if( hitE and (not hitN or not hitS))  then
-        if (not hitN) then
-            orientation[#orientation+1] = 'N'
-        end
-        if (not hitS) then
-            orientation[#orientation+1] = 'S'
-        end
-    end
-    end
-
-    -- if no move selected then select a random move
-    if(#orientation <= 0) then
-        orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
-    end
-    grid:setOrientation(self._piece, orientation[random:uniformInt(1, #orientation)])
-    grid:moveRel(self._piece, 'N')
-
-    -- check if goal reached
-    if (x == 0 and y == 0) then
-        return true
-    end
-    return false
-end
-
+-- shoots a ray in N,S,E,W direction and returns a a bool table indicating which directions had a hit
+-- ex: omnidirectional_ray_cast(grid, {75, 63}, 1) => {N = false, S = false, E = true, W = false }
 function AvatarAI:omnidirectional_ray_cast(grid, position, ray_dist)
     local hit = {N = false, S = false, E = false, W = false }
     -- N
@@ -199,17 +83,112 @@ function AvatarAI:bot_move_A_star(grid, piece,target)
     local parent = {}
     local f_cost = {}
     local g_cost = {}
-    -- traversal method
-    -- up down left right
-    -- discover up down left right
-    --
 end
+
 
 function AvatarAI:valid_tile(grid,position)
     if(grid:queryPosition(position) == nil) then
         return true
     end
     return false
+end
+
+-- Simple bot moving AI function, return a direction to move in
+function AvatarAI:bot_move_simple(grid, piece, target)
+    --DRIVING AI
+    self._piece = piece
+    local ray_dist = 1
+    local me_position =  grid:position(self._piece)
+    local hits = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
+
+    local t = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
+    local hitN = t.N
+    local hitE = t.E
+    local hitS = t.S
+    local hitW = t.W
+
+    ---- raw distance to target
+    me_position = grid:position(self._piece)
+    local x = target.x - me_position[1]
+    local y = target.y - me_position[2]
+
+    -- next Node choosing logic
+    local orientation = {}
+    if(y < 0 and not hits.N) then
+        orientation = {}
+        orientation[#orientation+1] = 'N'
+    else if(hits.N and (not hitE or not hitW))  then
+        if (not hitW) then
+            orientation[#orientation+1] = 'W'
+        end
+        if (not hitE) then
+            orientation[#orientation+1] = 'E'
+        end
+    end
+    end
+    if(y > 0 and not hitS) then
+        orientation = {}
+        orientation[#orientation+1] = 'S'
+    else if(hitS and (not hitE or not hitW))  then
+        if (not hitW) then
+            orientation[#orientation+1] = 'W'
+        end
+        if (not hitE) then
+            orientation[#orientation+1] = 'E'
+        end
+    end
+    end
+    if(x < 0 and not hitW) then
+        orientation = {}
+        orientation[#orientation+1] = 'W'
+    else if(hitW and (not hitN or not hitS))  then
+        if (not hitN) then
+            orientation[#orientation+1] = 'N'
+        end
+        if (not hitS) then
+            orientation[#orientation+1] = 'S'
+        end
+    end
+    end
+    if(x > 0 and not hitE) then
+        orientation = {}
+        orientation[#orientation+1] = 'E'
+    else if( hitE and (not hitN or not hitS))  then
+        if (not hitN) then
+            orientation[#orientation+1] = 'N'
+        end
+        if (not hitS) then
+            orientation[#orientation+1] = 'S'
+        end
+    end
+    end
+
+    -- if no move selected then select a random move
+    if(#orientation <= 0) then
+        orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
+    end
+    return orientation[random:uniformInt(1, #orientation)]
+end
+
+-- UTILITIES
+function AvatarAI:L1_distance(source_pos, target_pos)
+    return math.abs(target_pos[1] - source_pos[1])+math.abs(target_pos[2] - source_pos[2])
+end
+
+function AvatarAI:L2_distance(source_pos, target_pos)
+    return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
+end
+
+function AvatarAI:CheckGoal(grid, piece, target)
+    local me_position = grid:position(piece)
+    local x =  target.x - me_position[1]
+    local y =  target.y - me_position[2]
+
+    if (x == 0 and y == 0) then
+        return true
+    else
+        return false
+    end
 end
 
 function table.shallow_copy(t)
