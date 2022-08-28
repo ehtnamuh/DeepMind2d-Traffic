@@ -19,10 +19,8 @@ local tensor = require 'system.tensor'
 local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
-local avatarAi = require 'avatar_ai'
+local avatarAi = require 'AI.avatar_ai'
 
-
-local avatar_ai = {}
 local _COMPASS = {'N', 'E', 'S', 'W'}
 local _PLAYER_NAMES = {
     'blue',
@@ -351,7 +349,11 @@ function Avatar:update(grid)
     -- The AStar algorithm cannot find a path if it is occupied by other agents
     -- need to address this case
     -- local path = self._avatar_ai:computeAStarPath(grid, self._piece, self._targets[self._missionIndex])
-    --
+    local move = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])['orientation']
+
+    grid:setOrientation(self._piece, move)
+    grid:moveRel(self._piece, 'N')
+    print(move)
     --for i,v in ipairs(path) do
     --    print(v['orientation'])
     --end

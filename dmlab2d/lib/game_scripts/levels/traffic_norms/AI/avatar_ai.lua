@@ -6,14 +6,22 @@
 
 local class = require 'common.class'
 local random = require 'system.random'
-local aiHelper = require 'avatar_ai_helper'
-local tables = require 'common.tables'
+local aiHelper = require 'AI.avatar_ai_helper'
+
 local AvatarAI = class.Class()
 local _COMPASS = {'N', 'E', 'S', 'W'}
 
 --[[
 Logic for when a beam should be fired
 ]]
+
+function AvatarAI:__init__(kwargs)
+    self._path = {}
+    self._pathIndex = #self._path
+end
+
+
+
 function AvatarAI:bot_beam(grid)
     --TODO:
 end
@@ -116,7 +124,9 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     ]]
         if aiHelper:pEquality(current, target) then
             -- unwind and return path
-            return self:unwindPath(parent,target)
+            self._path = self:unwindPath(parent,target)
+            self._pathIndex = #self._path
+            return self._path
         end
     --[[
         otherwise
@@ -148,6 +158,26 @@ function AvatarAI:computeAStarPath(grid, piece, target)
 end
 
 -- A* UTILITIES
+function AvatarAI:progressPath(grid, piece, target)
+    if (#self._path <= 0) then
+        print("HIASDSODIAs")
+        self:computeAStarPath(grid, piece, target)
+    end
+    local move = self:getMove()
+    self._pathIndex = self._pathIndex - 1
+    return move
+end
+
+function AvatarAI:getMove()
+    return self._path[self._pathIndex]
+end
+
+function AvatarAI:clearPath()
+    self._path = {}
+    self._pathIndex = #self._path
+end
+
+
 function AvatarAI:not_in (set, keyNode)
 	for _, node in ipairs ( set ) do
 		if aiHelper:pEquality(node, keyNode) then return false end
