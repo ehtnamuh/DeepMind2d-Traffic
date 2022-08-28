@@ -127,7 +127,13 @@ struct Position2d {
   friend constexpr bool operator!=(Position2d lhs, Position2d rhs) {
     return lhs.x != rhs.x || lhs.y != rhs.y;
   }
+
+  operator std::string() const { return "Hi"; }
+
 };
+
+
+
 
 struct Vector2d {
   int x;

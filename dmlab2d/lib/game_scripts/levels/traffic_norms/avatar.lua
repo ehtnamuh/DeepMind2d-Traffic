@@ -19,7 +19,7 @@ local tensor = require 'system.tensor'
 local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
-local avatarai = require 'avatar_ai'
+local avatarAi = require 'avatar_ai'
 
 
 local avatar_ai = {}
@@ -95,7 +95,7 @@ function Avatar:__init__(kwargs)
     self._simSetting = kwargs.simSettings
     -- mission switching
     self._missionIndex = 1
-    self._targets = {{x = 3, y = 3}, {x = 48, y = 20}}
+    self._targets = {{3,3}, {48,20}}
 end
 
 function Avatar:addConfigs(worldConfig)
@@ -325,7 +325,7 @@ function Avatar:start(grid, locator, hitByVector)
         rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
     self._piece = piece
-    self._avatar_ai = avatarai.AvatarAI{piece = self._piece}
+    self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
     return piece
 end
 
@@ -333,24 +333,21 @@ end
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     if (self._isBot) then
-        local orientation = self._avatar_ai:bot_move_simple(grid, self._piece,
+        local orientation = self._avatar_ai:computeSimpleMove(grid, self._piece,
                 self._targets[self._missionIndex])
         grid:setOrientation(self._piece, orientation)
         grid:moveRel(self._piece, 'N')
 
-        if (self._avatar_ai:CheckGoal(grid, self._piece, self._targets[self._missionIndex])) then
+        if (self._avatar_ai:positionEquality(grid, grid:position(self._piece), self._targets[self._missionIndex])) then
             self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
             if (self._missionIndex == 0) then
                 self._missionIndex = 1
             end
         end
         self._avatar_ai:bot_beam(grid)
+        local path = self._avatar_ai:computeAStarPath(grid, self._piece, self._targets[self._missionIndex])
     end
-    print(grid:position(self._piece))
 
-    --if(self._isBot) then
-    --    self._avatar_ai:walkable_nodes(grid, grid:position(self._piece))
-    --end
 end
 
 

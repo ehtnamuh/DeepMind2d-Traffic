@@ -6,111 +6,35 @@
 
 local class = require 'common.class'
 local random = require 'system.random'
-
+local aiHelper = require 'avatar_ai_helper'
+local tables = require 'common.tables'
 local AvatarAI = class.Class()
 local _COMPASS = {'N', 'E', 'S', 'W'}
 
+--[[
+Logic for when a beam should be fired
+]]
 function AvatarAI:bot_beam(grid)
     --TODO:
 end
 
-
--- shoots a ray in N,S,E,W direction and returns a a bool table indicating which directions had a hit
--- ex: omnidirectional_ray_cast(grid, {75, 63}, 1) => {N = false, S = false, E = true, W = false }
-function AvatarAI:omnidirectional_ray_cast(grid, position, ray_dist)
-    local hit = {N = false, S = false, E = false, W = false }
-    -- N
-    local me_position = table.shallow_copy(position)
-    me_position[2] = me_position[2] - ray_dist
-    hit.N, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- E
-    me_position = table.shallow_copy(position)
-    me_position[1] = me_position[1] + ray_dist
-    hit.E, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- S
-    me_position = table.shallow_copy(position)
-    me_position[2] = me_position[2] + ray_dist
-    hit.S, _,_ = grid:rayCast(grid:layer(self._piece), position,me_position)
-    -- W
-    me_position = table.shallow_copy(position)
-    me_position[1] = me_position[1] - ray_dist
-    hit.W, _,_ = grid:rayCast(grid:layer(self._piece), grid:position(self._piece),me_position)
-    return hit
-end
-
-function AvatarAI:orientation_to_position(position, orientation)
-    local me_position = {}
-    local dist = 1
-    -- N
-    if(orientation == 'N') then
-        me_position = table.shallow_copy(position)
-        me_position[2] = me_position[2] - dist
-        return me_position
-    end
-    -- E
-    if(orientation == 'E') then
-        me_position = table.shallow_copy(position)
-        me_position[1] = me_position[1] + dist
-    end
-    -- S
-    if(orientation == 'S') then
-        me_position = table.shallow_copy(position)
-        me_position[2] = me_position[2] + dist
-    end
-    -- W
-    if(orientation == 'W') then
-        me_position = table.shallow_copy(position)
-        me_position[1] = me_position[1] - dist
-    end
-    return me_position
-end
-
-function AvatarAI:walkable_nodes(grid, position)
-    local walkable_nodes = {}
-    local hits = self:omnidirectional_ray_cast(grid, position, 1)
-    for key,v in pairs(hits) do
-        if (v) then
-            walkable_nodes[key] = self:orientation_to_position(position, key)
-            --print(self:orientation_to_position(position, key)[1])
-        end
-    end
-end
-
-function AvatarAI:bot_move_A_star(grid, piece,target)
-    local me_position = grid:position(piece)
-    local discovered = {}
-    local visited = {}
-    local parent = {}
-    local f_cost = {}
-    local g_cost = {}
-end
-
-
-function AvatarAI:valid_tile(grid,position)
-    if(grid:queryPosition(position) == nil) then
-        return true
-    end
-    return false
-end
-
 -- Simple bot moving AI function, return a direction to move in
-function AvatarAI:bot_move_simple(grid, piece, target)
+function AvatarAI:computeSimpleMove(grid, piece, target)
     --DRIVING AI
-    self._piece = piece
     local ray_dist = 1
-    local me_position =  grid:position(self._piece)
-    local hits = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
+    local me_position =  grid:position(piece)
+    local hits = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
 
-    local t = self:omnidirectional_ray_cast(grid, me_position, ray_dist)
+    local t = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
     local hitN = t.N
     local hitE = t.E
     local hitS = t.S
     local hitW = t.W
 
     ---- raw distance to target
-    me_position = grid:position(self._piece)
-    local x = target.x - me_position[1]
-    local y = target.y - me_position[2]
+    me_position = grid:position(piece)
+    local x = target[1] - me_position[1]
+    local y = target[2] - me_position[2]
 
     -- next Node choosing logic
     local orientation = {}
@@ -170,33 +94,108 @@ function AvatarAI:bot_move_simple(grid, piece, target)
     return orientation[random:uniformInt(1, #orientation)]
 end
 
--- UTILITIES
-function AvatarAI:L1_distance(source_pos, target_pos)
-    return math.abs(target_pos[1] - source_pos[1])+math.abs(target_pos[2] - source_pos[2])
-end
 
-function AvatarAI:L2_distance(source_pos, target_pos)
-    return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
-end
 
-function AvatarAI:CheckGoal(grid, piece, target)
-    local me_position = grid:position(piece)
-    local x =  target.x - me_position[1]
-    local y =  target.y - me_position[2]
+function AvatarAI:computeAStarPath(grid, piece, target)
+    local start_position = grid:position(piece)
+    local discovered = {}
+    local visited = {}
+    local parent = {}
+    local gCost, fCost = {}, {}
 
-    if (x == 0 and y == 0) then
-        return true
-    else
-        return false
+    discovered[#discovered+1] = start_position
+    gCost[aiHelper:pString(start_position)] = 0
+    fCost[aiHelper:pString(start_position)] = gCost[aiHelper:pString(start_position)] +
+            aiHelper:L2_distance(start_position, target)
+
+    while #discovered > 0 do
+        local current = self:lowestCostNode(discovered, fCost)
+    --[[
+        check to see if current_node is the target node
+        return path if goal is reached
+        to unwind a path, take last visited node and keep getting their parents to get path
+    ]]
+        if aiHelper:positionEquality(current, target) then
+            -- unwind and return path
+            return self:unwindPath(parent,target)
+        end
+    --[[
+        otherwise
+        remove current node from discovered node
+        discover walkable nodes around new current_node
+        update cost of the walkable nodes if their new f_cost is lower
+    ]]
+        self:remove_node(discovered, current)
+        table.insert(visited, current)
+
+        local walkableNeighbour = aiHelper:walkable_nodes(grid, current)
+        for _, neighbour in pairs(walkableNeighbour) do
+            if self:not_in(visited, neighbour) then
+                local tempGCost = gCost[aiHelper:pString(current)] + aiHelper:L2_distance(current, neighbour)
+
+                if self:not_in(discovered, neighbour) or tempGCost < gCost[aiHelper:pString(neighbour)] then
+                    parent[aiHelper:pString(neighbour)] = current
+                    gCost[aiHelper:pString(neighbour)] = tempGCost
+                    fCost = tempGCost + aiHelper:L2_distance(neighbour,target)
+                    if self:not_in(discovered, neighbour) then
+                        table.insert(discovered, neighbour)
+                    end
+                end
+            end
+        end
     end
+    -- No path found
+    return nil
 end
 
-function table.shallow_copy(t)
-  local t2 = {}
-  for k,v in pairs(t) do
-    t2[k] = v
-  end
-  return t2
+-- A* UTILITIES
+function AvatarAI:not_in (set, keyNode)
+	for _, node in ipairs ( set ) do
+		if aiHelper:pEquality(node, keyNode) then return false end
+	end
+	return true
+end
+
+function AvatarAI:remove_node ( set, removeNode )
+
+	for i, node in ipairs ( set ) do
+		if aiHelper:positionEquality(node, removeNode) then
+			set [ i ] = set [ #set ]
+			set [ #set ] = nil
+			break
+		end
+	end
+end
+
+function AvatarAI:lowestCostNode(discovered, cost_table)
+    local lowest, bestNode = INF, nil
+    for _,node in ipairs(discovered) do
+        local cost = cost_table[self:positionString(node)]
+        if cost < lowest then
+            lowest, bestNode = cost, node
+        end
+    end
+    return bestNode
+end
+
+function AvatarAI:unwindPath(parentTable, goal)
+    --    TODO:
+    local path = {}
+    local tempParent = parentTable[aiHelper:pString(goal)]
+    while tempParent ~= nil do
+        table.insert(path, tempParent)
+        tempParent = parentTable[aiHelper:pString(tempParent)]
+    end
+    return path
+end
+
+-- UTILITIES
+function AvatarAI:positionEquality(grid, position, target)
+    return aiHelper:pEquality(grid, position, target)
+end
+
+function AvatarAI:positionString(position)
+    return aiHelper:pString(position)
 end
 
 return {AvatarAI = AvatarAI}
