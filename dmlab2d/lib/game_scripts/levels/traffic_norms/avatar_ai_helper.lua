@@ -20,24 +20,24 @@ end
 shoots a ray in N,S,E,W direction and returns a a bool table indicating which directions had a hit
 ex: omnidirectional_ray_cast(grid, {75, 63}, 1) => {N = false, S = false, E = true, W = false }
 ]]
-function AIHelper:omnidirectional_ray_cast(grid, piece, position, ray_dist)
+function AIHelper:omnidirectional_ray_cast(grid, position, layer, ray_dist)
     local hit = {N = false, S = false, E = false, W = false }
     -- N
     local me_position = tables.shallowCopy(position)
     me_position[2] = me_position[2] - ray_dist
-    hit.N, _,_ = grid:rayCast(grid:layer(piece), position,me_position)
+    hit.N, _,_ = grid:rayCast(layer, position,me_position)
     -- E
     me_position = tables.shallowCopy(position)
     me_position[1] = me_position[1] + ray_dist
-    hit.E, _,_ = grid:rayCast(grid:layer(piece), position,me_position)
+    hit.E, _,_ = grid:rayCast(layer, position,me_position)
     -- S
     me_position = tables.shallowCopy(position)
     me_position[2] = me_position[2] + ray_dist
-    hit.S, _,_ = grid:rayCast(grid:layer(piece), position,me_position)
+    hit.S, _,_ = grid:rayCast(layer, position,me_position)
     -- W
     me_position = tables.shallowCopy(position)
     me_position[1] = me_position[1] - ray_dist
-    hit.W, _,_ = grid:rayCast(grid:layer(piece), grid:position(piece),me_position)
+    hit.W, _,_ = grid:rayCast(layer, position, me_position)
     return hit
 end
 
@@ -68,15 +68,15 @@ function AIHelper:orientation_to_position(position, orientation)
     return me_position
 end
 
-function AIHelper:walkable_nodes(grid, position)
+function AIHelper:walkable_nodes(grid, position, layer)
     local walkable_nodes = {}
-    local hits = self:omnidirectional_ray_cast(grid, position, 1)
+    local hits = self:omnidirectional_ray_cast(grid, position, layer, 1)
     for key,v in pairs(hits) do
-        if (v) then
+        if (not v) then
             walkable_nodes[key] = self:orientation_to_position(position, key)
-            --print(self:orientation_to_position(position, key)[1])
         end
     end
+    return walkable_nodes
 end
 
 function AIHelper:L1_distance(source_pos, target_pos)
@@ -87,7 +87,7 @@ function AIHelper:L2_distance(source_pos, target_pos)
     return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
 end
 
-function AIHelper:pEquality(grid, position, target)
+function AIHelper:pEquality(position, target)
     local x =  target[1] - position[1]
     local y =  target[2] - position[2]
 

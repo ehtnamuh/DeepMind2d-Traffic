@@ -23,13 +23,12 @@ function AvatarAI:computeSimpleMove(grid, piece, target)
     --DRIVING AI
     local ray_dist = 1
     local me_position =  grid:position(piece)
-    local hits = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
 
-    local t = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
-    local hitN = t.N
-    local hitE = t.E
-    local hitS = t.S
-    local hitW = t.W
+    local hits = aiHelper:omnidirectional_ray_cast(grid, me_position, grid:layer(piece), ray_dist)
+    local hitN = hits.N
+    local hitE = hits.E
+    local hitS = hits.S
+    local hitW = hits.W
 
     ---- raw distance to target
     me_position = grid:position(piece)
@@ -110,12 +109,12 @@ function AvatarAI:computeAStarPath(grid, piece, target)
 
     while #discovered > 0 do
         local current = self:lowestCostNode(discovered, fCost)
-    --[[
+        --[[
         check to see if current_node is the target node
         return path if goal is reached
         to unwind a path, take last visited node and keep getting their parents to get path
     ]]
-        if aiHelper:positionEquality(current, target) then
+        if aiHelper:pEquality(current, target) then
             -- unwind and return path
             return self:unwindPath(parent,target)
         end
@@ -127,17 +126,17 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     ]]
         self:remove_node(discovered, current)
         table.insert(visited, current)
-
-        local walkableNeighbour = aiHelper:walkable_nodes(grid, current)
-        for _, neighbour in pairs(walkableNeighbour) do
+        local walkableNeighbour = aiHelper:walkable_nodes(grid, current, grid:layer(piece))
+        for orientation, neighbour in pairs(walkableNeighbour) do
             if self:not_in(visited, neighbour) then
                 local tempGCost = gCost[aiHelper:pString(current)] + aiHelper:L2_distance(current, neighbour)
 
                 if self:not_in(discovered, neighbour) or tempGCost < gCost[aiHelper:pString(neighbour)] then
                     parent[aiHelper:pString(neighbour)] = current
                     gCost[aiHelper:pString(neighbour)] = tempGCost
-                    fCost = tempGCost + aiHelper:L2_distance(neighbour,target)
+                    fCost[aiHelper:pString(neighbour)] = tempGCost + aiHelper:L2_distance(neighbour,target)
                     if self:not_in(discovered, neighbour) then
+                        neighbour['orientation'] = orientation
                         table.insert(discovered, neighbour)
                     end
                 end
@@ -157,9 +156,8 @@ function AvatarAI:not_in (set, keyNode)
 end
 
 function AvatarAI:remove_node ( set, removeNode )
-
 	for i, node in ipairs ( set ) do
-		if aiHelper:positionEquality(node, removeNode) then
+		if aiHelper:pEquality(node, removeNode) then
 			set [ i ] = set [ #set ]
 			set [ #set ] = nil
 			break
@@ -168,10 +166,10 @@ function AvatarAI:remove_node ( set, removeNode )
 end
 
 function AvatarAI:lowestCostNode(discovered, cost_table)
-    local lowest, bestNode = INF, nil
+    local lowest, bestNode = cost_table[self:positionString(discovered[1])], nil
     for _,node in ipairs(discovered) do
         local cost = cost_table[self:positionString(node)]
-        if cost < lowest then
+        if cost <= lowest then
             lowest, bestNode = cost, node
         end
     end
@@ -190,8 +188,8 @@ function AvatarAI:unwindPath(parentTable, goal)
 end
 
 -- UTILITIES
-function AvatarAI:positionEquality(grid, position, target)
-    return aiHelper:pEquality(grid, position, target)
+function AvatarAI:positionEquality(position, target)
+    return aiHelper:pEquality(position, target)
 end
 
 function AvatarAI:positionString(position)
