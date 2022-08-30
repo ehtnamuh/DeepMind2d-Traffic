@@ -9,13 +9,6 @@ local tables = require 'common.tables'
 local AIHelper = {}
 AIHelper.__index = AIHelper
 
--- returns string version of grid:position
--- this should not be here
--- make a grid wrapper class later
-function AIHelper:pString(position)
-    return position[1] .. "," .. position[2]
-end
-
 --[[
 shoots a ray in N,S,E,W direction and returns a a bool table indicating which directions had a hit
 ex: omnidirectional_ray_cast(grid, {75, 63}, 1) => {N = false, S = false, E = true, W = false }
@@ -86,6 +79,14 @@ end
 function AIHelper:L2_distance(source_pos, target_pos)
     return math.sqrt((target_pos[2] - source_pos[2])^2 + (target_pos[1] - source_pos[1])^2)
 end
+
+-- returns string version of grid:position
+-- this should not be here
+-- make a grid wrapper class later
+function AIHelper:pString(position)
+    return position[1] .. "," .. position[2]
+end
+
 
 function AIHelper:pEquality(position, target)
     local x =  target[1] - position[1]

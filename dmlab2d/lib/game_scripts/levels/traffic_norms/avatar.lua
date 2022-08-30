@@ -335,30 +335,25 @@ function Avatar:update(grid)
                 self._targets[self._missionIndex])
         grid:setOrientation(self._piece, orientation)
         grid:moveRel(self._piece, 'N')
-
-        if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
-            self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
-            if (self._missionIndex == 0) then
-                self._missionIndex = 1
-            end
-        end
         self._avatar_ai:bot_beam(grid)
+    else
+        local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
+        if(orientation ~= nil) then
+            grid:setOrientation(self._piece, orientation)
+            grid:moveRel(self._piece, 'N')
+        end
+        --print(orientation)
     end
-    -- got path and orientation from A*
-    -- now need some caching functionality
-    -- The AStar algorithm cannot find a path if it is occupied by other agents
-    -- need to address this case
-    -- local path = self._avatar_ai:computeAStarPath(grid, self._piece, self._targets[self._missionIndex])
-    local move = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])['orientation']
 
-    grid:setOrientation(self._piece, move)
-    grid:moveRel(self._piece, 'N')
-    print(move)
-    --for i,v in ipairs(path) do
-    --    print(v['orientation'])
-    --end
+    if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
+        self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
+        if (self._missionIndex == 0) then
+            self._missionIndex = 1
+        end
+    end
+
 
 end
 
 
-return {Avatar = Avatar}
+    return {Avatar = Avatar}

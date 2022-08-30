@@ -17,7 +17,7 @@ Logic for when a beam should be fired
 
 function AvatarAI:__init__(kwargs)
     self._path = {}
-    self._pathIndex = #self._path
+    self._pathIndex = 0
 end
 
 
@@ -101,9 +101,8 @@ function AvatarAI:computeSimpleMove(grid, piece, target)
     return orientation[random:uniformInt(1, #orientation)]
 end
 
-
-
 function AvatarAI:computeAStarPath(grid, piece, target)
+    self:clearPath()
     local start_position = grid:position(piece)
     local discovered = {}
     local visited = {}
@@ -124,7 +123,7 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     ]]
         if aiHelper:pEquality(current, target) then
             -- unwind and return path
-            self._path = self:unwindPath(parent,target)
+            self._path = self:unwindPath(parent,current)
             self._pathIndex = #self._path
             return self._path
         end
@@ -146,7 +145,7 @@ function AvatarAI:computeAStarPath(grid, piece, target)
                     gCost[aiHelper:pString(neighbour)] = tempGCost
                     fCost[aiHelper:pString(neighbour)] = tempGCost + aiHelper:L2_distance(neighbour,target)
                     if self:not_in(discovered, neighbour) then
-                        neighbour['orientation'] = orientation
+                        neighbour['orientation'] = ""..orientation
                         table.insert(discovered, neighbour)
                     end
                 end
@@ -154,13 +153,15 @@ function AvatarAI:computeAStarPath(grid, piece, target)
         end
     end
     -- No path found
+    print("NO PATH FOUND")
     return nil
 end
 
 -- A* UTILITIES
 function AvatarAI:progressPath(grid, piece, target)
-    if (#self._path <= 0) then
-        print("HIASDSODIAs")
+    print(self._pathIndex)
+    if (self._pathIndex <= 0 and not aiHelper:pEquality(grid:position(piece), target)) then
+        print("A* Called")
         self:computeAStarPath(grid, piece, target)
     end
     local move = self:getMove()
@@ -169,7 +170,10 @@ function AvatarAI:progressPath(grid, piece, target)
 end
 
 function AvatarAI:getMove()
-    return self._path[self._pathIndex]
+    if(self._pathIndex <= 0) then
+        return nil
+    end
+    return self._path[self._pathIndex]['orientation']
 end
 
 function AvatarAI:clearPath()
@@ -207,13 +211,14 @@ function AvatarAI:lowestCostNode(discovered, cost_table)
 end
 
 function AvatarAI:unwindPath(parentTable, goal)
-    --    TODO:
     local path = {}
+    table.insert(path, goal)
     local tempParent = parentTable[aiHelper:pString(goal)]
     while tempParent ~= nil do
         table.insert(path, tempParent)
         tempParent = parentTable[aiHelper:pString(tempParent)]
     end
+    table.remove(path, #path )
     return path
 end
 
