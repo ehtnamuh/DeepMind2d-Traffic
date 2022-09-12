@@ -19,10 +19,8 @@ local tensor = require 'system.tensor'
 local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
-local avatarAi = require 'avatar_ai'
+local avatarAi = require 'AI.avatar_ai'
 
-
-local avatar_ai = {}
 local _COMPASS = {'N', 'E', 'S', 'W'}
 local _PLAYER_NAMES = {
     'blue',
@@ -337,18 +335,25 @@ function Avatar:update(grid)
                 self._targets[self._missionIndex])
         grid:setOrientation(self._piece, orientation)
         grid:moveRel(self._piece, 'N')
-
-        if (self._avatar_ai:positionEquality(grid, grid:position(self._piece), self._targets[self._missionIndex])) then
-            self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
-            if (self._missionIndex == 0) then
-                self._missionIndex = 1
-            end
-        end
         self._avatar_ai:bot_beam(grid)
-        local path = self._avatar_ai:computeAStarPath(grid, self._piece, self._targets[self._missionIndex])
+    else
+        local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
+        if(orientation ~= nil) then
+            grid:setOrientation(self._piece, orientation)
+            grid:moveRel(self._piece, 'N')
+        end
+        --print(orientation)
     end
+
+    if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
+        self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
+        if (self._missionIndex == 0) then
+            self._missionIndex = 1
+        end
+    end
+
 
 end
 
 
-return {Avatar = Avatar}
+    return {Avatar = Avatar}

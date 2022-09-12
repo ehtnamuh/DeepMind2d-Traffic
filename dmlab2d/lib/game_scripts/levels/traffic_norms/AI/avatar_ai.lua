@@ -6,14 +6,22 @@
 
 local class = require 'common.class'
 local random = require 'system.random'
-local aiHelper = require 'avatar_ai_helper'
-local tables = require 'common.tables'
+local aiHelper = require 'AI.avatar_ai_helper'
+
 local AvatarAI = class.Class()
 local _COMPASS = {'N', 'E', 'S', 'W'}
 
 --[[
 Logic for when a beam should be fired
 ]]
+
+function AvatarAI:__init__(kwargs)
+    self._path = {}
+    self._pathIndex = 0
+end
+
+
+
 function AvatarAI:bot_beam(grid)
     --TODO:
 end
@@ -23,13 +31,12 @@ function AvatarAI:computeSimpleMove(grid, piece, target)
     --DRIVING AI
     local ray_dist = 1
     local me_position =  grid:position(piece)
-    local hits = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
 
-    local t = aiHelper:omnidirectional_ray_cast(grid, piece, me_position, ray_dist)
-    local hitN = t.N
-    local hitE = t.E
-    local hitS = t.S
-    local hitW = t.W
+    local hits = aiHelper:omnidirectional_ray_cast(grid, me_position, grid:layer(piece), ray_dist)
+    local hitN = hits.N
+    local hitE = hits.E
+    local hitS = hits.S
+    local hitW = hits.W
 
     ---- raw distance to target
     me_position = grid:position(piece)
@@ -94,9 +101,8 @@ function AvatarAI:computeSimpleMove(grid, piece, target)
     return orientation[random:uniformInt(1, #orientation)]
 end
 
-
-
 function AvatarAI:computeAStarPath(grid, piece, target)
+    self:clearPath()
     local start_position = grid:position(piece)
     local discovered = {}
     local visited = {}
@@ -110,14 +116,16 @@ function AvatarAI:computeAStarPath(grid, piece, target)
 
     while #discovered > 0 do
         local current = self:lowestCostNode(discovered, fCost)
-    --[[
+        --[[
         check to see if current_node is the target node
         return path if goal is reached
         to unwind a path, take last visited node and keep getting their parents to get path
     ]]
-        if aiHelper:positionEquality(current, target) then
+        if aiHelper:pEquality(current, target) then
             -- unwind and return path
-            return self:unwindPath(parent,target)
+            self._path = self:unwindPath(parent,current)
+            self._pathIndex = #self._path
+            return self._path
         end
     --[[
         otherwise
@@ -127,17 +135,17 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     ]]
         self:remove_node(discovered, current)
         table.insert(visited, current)
-
-        local walkableNeighbour = aiHelper:walkable_nodes(grid, current)
-        for _, neighbour in pairs(walkableNeighbour) do
+        local walkableNeighbour = aiHelper:walkable_nodes(grid, current, grid:layer(piece))
+        for orientation, neighbour in pairs(walkableNeighbour) do
             if self:not_in(visited, neighbour) then
                 local tempGCost = gCost[aiHelper:pString(current)] + aiHelper:L2_distance(current, neighbour)
 
                 if self:not_in(discovered, neighbour) or tempGCost < gCost[aiHelper:pString(neighbour)] then
                     parent[aiHelper:pString(neighbour)] = current
                     gCost[aiHelper:pString(neighbour)] = tempGCost
-                    fCost = tempGCost + aiHelper:L2_distance(neighbour,target)
+                    fCost[aiHelper:pString(neighbour)] = tempGCost + aiHelper:L2_distance(neighbour,target)
                     if self:not_in(discovered, neighbour) then
+                        neighbour['orientation'] = ""..orientation
                         table.insert(discovered, neighbour)
                     end
                 end
@@ -145,10 +153,35 @@ function AvatarAI:computeAStarPath(grid, piece, target)
         end
     end
     -- No path found
+    print("NO PATH FOUND")
     return nil
 end
 
 -- A* UTILITIES
+function AvatarAI:progressPath(grid, piece, target)
+    print(self._pathIndex)
+    if (self._pathIndex <= 0 and not aiHelper:pEquality(grid:position(piece), target)) then
+        print("A* Called")
+        self:computeAStarPath(grid, piece, target)
+    end
+    local move = self:getMove()
+    self._pathIndex = self._pathIndex - 1
+    return move
+end
+
+function AvatarAI:getMove()
+    if(self._pathIndex <= 0) then
+        return nil
+    end
+    return self._path[self._pathIndex]['orientation']
+end
+
+function AvatarAI:clearPath()
+    self._path = {}
+    self._pathIndex = #self._path
+end
+
+
 function AvatarAI:not_in (set, keyNode)
 	for _, node in ipairs ( set ) do
 		if aiHelper:pEquality(node, keyNode) then return false end
@@ -157,9 +190,8 @@ function AvatarAI:not_in (set, keyNode)
 end
 
 function AvatarAI:remove_node ( set, removeNode )
-
 	for i, node in ipairs ( set ) do
-		if aiHelper:positionEquality(node, removeNode) then
+		if aiHelper:pEquality(node, removeNode) then
 			set [ i ] = set [ #set ]
 			set [ #set ] = nil
 			break
@@ -168,10 +200,10 @@ function AvatarAI:remove_node ( set, removeNode )
 end
 
 function AvatarAI:lowestCostNode(discovered, cost_table)
-    local lowest, bestNode = INF, nil
+    local lowest, bestNode = cost_table[self:positionString(discovered[1])], nil
     for _,node in ipairs(discovered) do
         local cost = cost_table[self:positionString(node)]
-        if cost < lowest then
+        if cost <= lowest then
             lowest, bestNode = cost, node
         end
     end
@@ -179,19 +211,20 @@ function AvatarAI:lowestCostNode(discovered, cost_table)
 end
 
 function AvatarAI:unwindPath(parentTable, goal)
-    --    TODO:
     local path = {}
+    table.insert(path, goal)
     local tempParent = parentTable[aiHelper:pString(goal)]
     while tempParent ~= nil do
         table.insert(path, tempParent)
         tempParent = parentTable[aiHelper:pString(tempParent)]
     end
+    table.remove(path, #path )
     return path
 end
 
 -- UTILITIES
-function AvatarAI:positionEquality(grid, position, target)
-    return aiHelper:pEquality(grid, position, target)
+function AvatarAI:positionEquality(position, target)
+    return aiHelper:pEquality(position, target)
 end
 
 function AvatarAI:positionString(position)
