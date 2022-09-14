@@ -17,7 +17,7 @@ function Car:__init__(kwargs)
 end
 
 function Car:accelerate()
-    if self.accelerationy >= self.max_acceleration then
+    if self.acceleration >= self.max_acceleration then
         return
     end
     self.acceleration = self.acceleration + 1
