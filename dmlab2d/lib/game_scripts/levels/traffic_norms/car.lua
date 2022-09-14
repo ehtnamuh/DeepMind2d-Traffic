@@ -9,10 +9,37 @@ function Car:__init__(kwargs)
     self._settings = kwargs.settings
     self._index = kwargs.index
     self._isBot = kwargs.isBot
+    self.max_speed = 3
+    self.max_acceleration = 1
     self.acceleration = 0
     self.velocity = 0
     self.orientation = 'N'
 end
 
+function Car:accelerate()
+    if self.accelerationy >= self.max_acceleration then
+        return
+    end
+    self.acceleration = self.acceleration + 1
+end
+
+function Car:decelerate()
+    if self.acceleration <= -1 then
+        return
+    end
+    self.acceleration = self.acceleration - 1
+end
+
+
+function Car:updateSpeed()
+    if self.velocity >= self.max_speed then
+        return
+    end
+    self.velocity = self.velocity + self.acceleration
+end
+
+function Car:safeGapCalculation(myPosition, otherPosition)
+
+end
 
 return {Car = Car }

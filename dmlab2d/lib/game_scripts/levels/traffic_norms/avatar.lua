@@ -337,11 +337,11 @@ function Avatar:update(grid)
         grid:moveRel(self._piece, 'N')
         self._avatar_ai:bot_beam(grid)
     else
-        local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
-        if(orientation ~= nil) then
-            grid:setOrientation(self._piece, orientation)
-            grid:moveRel(self._piece, 'N')
-        end
+        --local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
+        --if(orientation ~= nil) then
+        --    grid:setOrientation(self._piece, orientation)
+        --    grid:moveRel(self._piece, 'N')
+        --end
         --print(orientation)
     end
 
