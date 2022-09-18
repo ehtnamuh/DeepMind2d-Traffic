@@ -7,9 +7,10 @@
 local class = require 'common.class'
 local random = require 'system.random'
 local aiHelper = require 'AI.avatar_ai_helper'
+local maps = require 'maps'
 
 local AvatarAI = class.Class()
-local _COMPASS = {'N', 'E', 'S', 'W'}
+local _COMPASS = { 'N', 'E', 'S', 'W' }
 
 --[[
 Logic for when a beam should be fired
@@ -20,17 +21,66 @@ function AvatarAI:__init__(kwargs)
     self._pathIndex = 0
 end
 
-
-
 function AvatarAI:bot_beam(grid)
     --TODO:
+end
+
+function AvatarAI:wayPointFollow(grid, piece,orientation)
+    local map = maps["logic"].layout
+    local me_position = grid:position(piece)
+    local x = (me_position[2] * (25 + 1)) + me_position[1] + 1
+    local c = map:sub(x, x)
+
+    if (c == 'e' and (orientation == 'N' or orientation == 'S')) then
+        local C = { 'E', 'W' }
+        orientation = C[random:uniformInt(1, #C)]
+    end
+    if (c == 'n' and (orientation == 'E' or orientation == 'W')) then
+        local C = { 'N', 'S' }
+        orientation = C[random:uniformInt(1, #C)]
+    end
+    if (c == 'b') then
+        if (orientation == 'E') then
+            local C = { 'N', 'S', 'E' }
+            orientation = C[random:uniformInt(1, #C)]
+        elseif (orientation == 'W') then
+            local C = { 'N', 'S', 'W' }
+            orientation = C[random:uniformInt(1, #C)]
+        elseif (orientation == 'S') then
+            local C = { 'E', 'S', 'W' }
+            orientation = C[random:uniformInt(1, #C)]
+        elseif (orientation == 'N') then
+            local C = { 'N', 'E', 'W' }
+            orientation = C[random:uniformInt(1, #C)]
+        end
+    end
+
+    local isMoveValid = false
+    local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
+    for tempOrientation, neighbour in pairs(walkableNeighbour) do
+        if (tempOrientation == orientation) then
+            isMoveValid = true
+        end
+    end
+    if(not isMoveValid) then
+        if(orientation == 'N') then
+            orientation = 'S'
+        elseif(orientation == 'S') then
+            orientation = 'N'
+        elseif(orientation == 'E') then
+            orientation = 'W'
+        elseif(orientation == 'W') then
+            orientation = 'E'
+        end
+    end
+    return orientation
 end
 
 -- Simple bot moving AI function, return a direction to move in
 function AvatarAI:computeSimpleMove(grid, piece, target)
     --DRIVING AI
     local ray_dist = 1
-    local me_position =  grid:position(piece)
+    local me_position = grid:position(piece)
 
     local hits = aiHelper:omnidirectional_ray_cast(grid, me_position, grid:layer(piece), ray_dist)
     local hitN = hits.N
@@ -45,58 +95,62 @@ function AvatarAI:computeSimpleMove(grid, piece, target)
 
     -- next Node choosing logic
     local orientation = {}
-    if(y < 0 and not hits.N) then
+    if (y < 0 and not hits.N) then
         orientation = {}
-        orientation[#orientation+1] = 'N'
-    else if(hits.N and (not hitE or not hitW))  then
-        if (not hitW) then
-            orientation[#orientation+1] = 'W'
-        end
-        if (not hitE) then
-            orientation[#orientation+1] = 'E'
+        orientation[#orientation + 1] = 'N'
+    else
+        if (hits.N and (not hitE or not hitW)) then
+            if (not hitW) then
+                orientation[#orientation + 1] = 'W'
+            end
+            if (not hitE) then
+                orientation[#orientation + 1] = 'E'
+            end
         end
     end
-    end
-    if(y > 0 and not hitS) then
+    if (y > 0 and not hitS) then
         orientation = {}
-        orientation[#orientation+1] = 'S'
-    else if(hitS and (not hitE or not hitW))  then
-        if (not hitW) then
-            orientation[#orientation+1] = 'W'
-        end
-        if (not hitE) then
-            orientation[#orientation+1] = 'E'
+        orientation[#orientation + 1] = 'S'
+    else
+        if (hitS and (not hitE or not hitW)) then
+            if (not hitW) then
+                orientation[#orientation + 1] = 'W'
+            end
+            if (not hitE) then
+                orientation[#orientation + 1] = 'E'
+            end
         end
     end
-    end
-    if(x < 0 and not hitW) then
+    if (x < 0 and not hitW) then
         orientation = {}
-        orientation[#orientation+1] = 'W'
-    else if(hitW and (not hitN or not hitS))  then
-        if (not hitN) then
-            orientation[#orientation+1] = 'N'
-        end
-        if (not hitS) then
-            orientation[#orientation+1] = 'S'
+        orientation[#orientation + 1] = 'W'
+    else
+        if (hitW and (not hitN or not hitS)) then
+            if (not hitN) then
+                orientation[#orientation + 1] = 'N'
+            end
+            if (not hitS) then
+                orientation[#orientation + 1] = 'S'
+            end
         end
     end
-    end
-    if(x > 0 and not hitE) then
+    if (x > 0 and not hitE) then
         orientation = {}
-        orientation[#orientation+1] = 'E'
-    else if( hitE and (not hitN or not hitS))  then
-        if (not hitN) then
-            orientation[#orientation+1] = 'N'
+        orientation[#orientation + 1] = 'E'
+    else
+        if (hitE and (not hitN or not hitS)) then
+            if (not hitN) then
+                orientation[#orientation + 1] = 'N'
+            end
+            if (not hitS) then
+                orientation[#orientation + 1] = 'S'
+            end
         end
-        if (not hitS) then
-            orientation[#orientation+1] = 'S'
-        end
-    end
     end
 
     -- if no move selected then select a random move
-    if(#orientation <= 0) then
-        orientation[#orientation+1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
+    if (#orientation <= 0) then
+        orientation[#orientation + 1] = _COMPASS[random:uniformInt(1, #_COMPASS)]
     end
     return orientation[random:uniformInt(1, #orientation)]
 end
@@ -109,7 +163,7 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     local parent = {}
     local gCost, fCost = {}, {}
 
-    discovered[#discovered+1] = start_position
+    discovered[#discovered + 1] = start_position
     gCost[aiHelper:pString(start_position)] = 0
     fCost[aiHelper:pString(start_position)] = gCost[aiHelper:pString(start_position)] +
             aiHelper:L2_distance(start_position, target)
@@ -123,16 +177,16 @@ function AvatarAI:computeAStarPath(grid, piece, target)
     ]]
         if aiHelper:pEquality(current, target) then
             -- unwind and return path
-            self._path = self:unwindPath(parent,current)
+            self._path = self:unwindPath(parent, current)
             self._pathIndex = #self._path
             return self._path
         end
-    --[[
-        otherwise
-        remove current node from discovered node
-        discover walkable nodes around new current_node
-        update cost of the walkable nodes if their new f_cost is lower
-    ]]
+        --[[
+            otherwise
+            remove current node from discovered node
+            discover walkable nodes around new current_node
+            update cost of the walkable nodes if their new f_cost is lower
+        ]]
         self:remove_node(discovered, current)
         table.insert(visited, current)
         local walkableNeighbour = aiHelper:walkable_nodes(grid, current, grid:layer(piece))
@@ -143,9 +197,9 @@ function AvatarAI:computeAStarPath(grid, piece, target)
                 if self:not_in(discovered, neighbour) or tempGCost < gCost[aiHelper:pString(neighbour)] then
                     parent[aiHelper:pString(neighbour)] = current
                     gCost[aiHelper:pString(neighbour)] = tempGCost
-                    fCost[aiHelper:pString(neighbour)] = tempGCost + aiHelper:L2_distance(neighbour,target)
+                    fCost[aiHelper:pString(neighbour)] = tempGCost + aiHelper:L2_distance(neighbour, target)
                     if self:not_in(discovered, neighbour) then
-                        neighbour['orientation'] = ""..orientation
+                        neighbour['orientation'] = "" .. orientation
                         table.insert(discovered, neighbour)
                     end
                 end
@@ -170,7 +224,7 @@ function AvatarAI:progressPath(grid, piece, target)
 end
 
 function AvatarAI:getMove()
-    if(self._pathIndex <= 0) then
+    if (self._pathIndex <= 0) then
         return nil
     end
     return self._path[self._pathIndex]['orientation']
@@ -181,27 +235,28 @@ function AvatarAI:clearPath()
     self._pathIndex = #self._path
 end
 
-
 function AvatarAI:not_in (set, keyNode)
-	for _, node in ipairs ( set ) do
-		if aiHelper:pEquality(node, keyNode) then return false end
-	end
-	return true
+    for _, node in ipairs(set) do
+        if aiHelper:pEquality(node, keyNode) then
+            return false
+        end
+    end
+    return true
 end
 
-function AvatarAI:remove_node ( set, removeNode )
-	for i, node in ipairs ( set ) do
-		if aiHelper:pEquality(node, removeNode) then
-			set [ i ] = set [ #set ]
-			set [ #set ] = nil
-			break
-		end
-	end
+function AvatarAI:remove_node (set, removeNode)
+    for i, node in ipairs(set) do
+        if aiHelper:pEquality(node, removeNode) then
+            set[i] = set[#set]
+            set[#set] = nil
+            break
+        end
+    end
 end
 
 function AvatarAI:lowestCostNode(discovered, cost_table)
     local lowest, bestNode = cost_table[self:positionString(discovered[1])], nil
-    for _,node in ipairs(discovered) do
+    for _, node in ipairs(discovered) do
         local cost = cost_table[self:positionString(node)]
         if cost <= lowest then
             lowest, bestNode = cost, node
@@ -218,7 +273,7 @@ function AvatarAI:unwindPath(parentTable, goal)
         table.insert(path, tempParent)
         tempParent = parentTable[aiHelper:pString(tempParent)]
     end
-    table.remove(path, #path )
+    table.remove(path, #path)
     return path
 end
 
@@ -231,4 +286,4 @@ function AvatarAI:positionString(position)
     return aiHelper:pString(position)
 end
 
-return {AvatarAI = AvatarAI}
+return { AvatarAI = AvatarAI }

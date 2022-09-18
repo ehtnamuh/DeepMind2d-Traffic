@@ -106,29 +106,6 @@ function Simulation:stateCallbacks(avatars)
   local radius = settings.seedRadius
   local stateCallbacks = {}
   stateCallbacks.wall = {onHit = true}
-  local apple = {}
-  function apple.onAdd(grid, apple)
-    local pos = grid:position(apple)
-    for piece in pairs(grid:queryDiamond('wait', pos, radius)) do
-      grid:setState(piece, 'apple.wait')
-    end
-  end
-  apple.onContact = {avatar = {}}
-  function apple.onContact.avatar.enter(grid, applePiece, avatarPiece)
-    local avatarState = grid:userState(avatarPiece)
-    local pos = grid:position(applePiece)
-    local numInRadius = _getNumLiveNeighbors(grid, pos, radius)
-    local rewardAmountModifier = 0
-    if numInRadius == 1 then
-      rewardAmountModifier = avatarState.rewardForEatingLastAppleInRadius
-    end
-    local rewardAmount = 1 + rewardAmountModifier
-    avatarState.reward = avatarState.reward + rewardAmount
-    grid:setState(applePiece, 'apple.wait')
-    for piece in pairs(grid:queryDiamond('wait', pos, radius)) do
-      grid:setState(piece, 'apple.wait')
-    end
-  end
 
   return stateCallbacks
 end

@@ -1,9 +1,11 @@
-import numpy as np
 from matplotlib.image import imread
 
 colorToSymbol = {"#ffffff": "*",
-                     "#ff0000": "p",
-                     "#000000": " "}
+                    "#ff0000": "b",
+                    "#00ff00": "e",
+                    "#0000ff": "n",
+                    "#ffff00": "p",
+                    "#000000": " "}
 
 
 def colorToSymbolMap(colorString, colorToSymbolDict=colorToSymbol):
@@ -25,7 +27,8 @@ def rgbToSymbol(r, g, b):
 
 
 def main():
-    img = imread("img.png")
+    # img = imread("roadLogic.png")
+    img = imread("playerSpawns.png")
     symbolMap = ""
     for line in img:
         myLine = ""

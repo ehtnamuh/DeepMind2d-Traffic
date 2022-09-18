@@ -69,7 +69,7 @@ function Avatar.defaultSettings()
         rewardForEatingLastAppleInRadius = 0,
         zap = {
             radius = 1,
-            length = 5
+            length = 4
         },
         view = {
             left = 5,
@@ -93,7 +93,7 @@ function Avatar:__init__(kwargs)
     self._simSetting = kwargs.simSettings
     -- mission switching
     self._missionIndex = 1
-    self._targets = {{3,3}, {48,20}}
+    self._targets = {{1,1}, {23,23}, {13, 13}}
 end
 
 function Avatar:addConfigs(worldConfig)
@@ -324,6 +324,7 @@ function Avatar:start(grid, locator, hitByVector)
     })
     self._piece = piece
     self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
+    self._orientation = 'N'
     return piece
 end
 
@@ -331,9 +332,10 @@ end
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     if (self._isBot) then
-        local orientation = self._avatar_ai:computeSimpleMove(grid, self._piece,
-                self._targets[self._missionIndex])
-        grid:setOrientation(self._piece, orientation)
+        --local orientation = self._avatar_ai:computeSimpleMove(grid, self._piece,
+        --        self._targets[self._missionIndex])
+        self._orientation = self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation)
+        grid:setOrientation(self._piece, self._orientation)
         grid:moveRel(self._piece, 'N')
         self._avatar_ai:bot_beam(grid)
     else
