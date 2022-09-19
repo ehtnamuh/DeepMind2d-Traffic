@@ -3,43 +3,56 @@
 --- Created by samin.
 --- DateTime: 8/28/22 2:13 PM
 ---
+---
+local aiHelper = require 'AI.avatar_ai_helper'
+
 local Car = class.Class()
 
 function Car:__init__(kwargs)
     self._settings = kwargs.settings
     self._index = kwargs.index
     self._isBot = kwargs.isBot
-    self.max_speed = 3
-    self.max_acceleration = 1
-    self.acceleration = 0
-    self.velocity = 0
-    self.orientation = 'N'
+    self._max_speed = 3
+    self._maxAcceleration = 1
+    self._acceleration = 0
+    self._velocity = 0
+    self._timeGap = 0.5
+    self._orientation = 'N'
 end
 
 function Car:accelerate()
-    if self.acceleration >= self.max_acceleration then
+    if self._acceleration >= self._maxAcceleration then
         return
     end
-    self.acceleration = self.acceleration + 1
+    self._acceleration = self._acceleration + 1
 end
 
 function Car:decelerate()
-    if self.acceleration <= -1 then
+    if self._acceleration <= -1 then
         return
     end
-    self.acceleration = self.acceleration - 1
+    self._acceleration = self._acceleration - 1
 end
 
 
 function Car:updateSpeed()
-    if self.velocity >= self.max_speed then
+    if self._velocity >= self._max_speed then
         return
     end
-    self.velocity = self.velocity + self.acceleration
+    self._velocity = self._velocity + self._acceleration
 end
 
 function Car:safeGapCalculation(myPosition, otherPosition)
-
+    local displacement = aiHelper:L2_distance(myPosition, otherPosition)
+    local crash_time = displacement/self._velocity
+    local stop_time = self._velocity/self._acceleration
+    local time_gap = stop_time - crash_time
+    if(time_gap > self._timeGap) then
+        print("Safe")
+        return true
+    end
+    print("UnSafe")
+    return false
 end
 
 return {Car = Car }
