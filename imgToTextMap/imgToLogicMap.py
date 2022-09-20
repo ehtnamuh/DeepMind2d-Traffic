@@ -1,4 +1,5 @@
 from matplotlib.image import imread
+import os
 
 color_to_symbol = {"#ffffff": "*",
                    "#ff0000": "b",
@@ -31,27 +32,29 @@ def rgb_to_symbol(r, g, b):
 def img_to_logic_map(img):
     symbol_map = ""
     for line in img:
-        myLine = ""
+        my_line = ""
         for pixel in line:
             r, g, b = pixel[0], pixel[1], pixel[2]
-            myLine += rgb_to_symbol(r, g, b)
-        symbol_map = symbol_map + myLine + "\n"
+            my_line += rgb_to_symbol(r, g, b)
+        symbol_map = symbol_map + my_line + "\n"
     return symbol_map
 
 
-def write_map_to_file(logic_map, map_name):
-    f = open(map_name, "w")
+def write_map_to_file(logic_map, map_name, save_location=""):
+    path = os.path.join(save_location,map_name)
+    f = open(path, "w")
     f.write(logic_map)
     f.close()
 
 
 def main():
+    save_path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps"
     img = imread("playerSpawns.png")
     logic_map = img_to_logic_map(img)
-    write_map_to_file(logic_map, "playerSpawns.txt")
+    write_map_to_file(logic_map, "playerSpawns.txt", save_path)
     img = imread("roadLogic.png")
     logic_map = img_to_logic_map(img)
-    write_map_to_file(logic_map, "roadLogic.txt")
+    write_map_to_file(logic_map, "roadLogic.txt", save_path)
 
 
 if __name__ == "__main__":

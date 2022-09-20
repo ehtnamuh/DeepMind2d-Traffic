@@ -13,61 +13,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ]]
 
+
+local path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
+local temp_path = path.."playerSpawns.txt"
+io.input(temp_path)
+local default = io.read("*all")
+io.close()
+local temp_path = path.."roadLogic.txt"
+io.input(temp_path)
+local logic = io.read("*all")
+io.close()
+
 local maps = {}
 
-maps.default = [[
-*************************
-*          p p          *
-* ********     ******** *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* ********     ******** *
-*p                     p*
-*                       *
-*p                     p*
-* ********     ******** *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* *      *     *      * *
-* ********     ******** *
-*          p p          *
-*************************]]
 
-maps.logic = [[
-*************************
-*beeeeeeeebbbbbeeeeeeeeb*
-*n********nnnnn********n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n********nnnnn********n*
-*beeeeeeeebbbbbeeeeeeeeb*
-*beeeeeeeebbbbbeeeeeeeeb*
-*beeeeeeeebbbbbeeeeeeeeb*
-*n********nnnnn********n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n*      *nnnnn*      *n*
-*n********nnnnn********n*
-*beeeeeeeebbbbbeeeeeeeeb*
-*************************]]
+maps.default = default
+
+maps.logic = logic
 
 
 local _DEFAULT_STATE_MAP = {
