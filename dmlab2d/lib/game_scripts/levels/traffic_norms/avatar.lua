@@ -339,6 +339,10 @@ function Avatar:update(grid)
         grid:moveRel(self._piece, 'N')
         self._avatar_ai:bot_beam(grid)
     else
+        --self._orientation = self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation)
+        --grid:setOrientation(self._piece, self._orientation)
+        --grid:moveRel(self._piece, 'N')
+        --self._avatar_ai:bot_beam(grid)
         --local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
         --if(orientation ~= nil) then
         --    grid:setOrientation(self._piece, orientation)

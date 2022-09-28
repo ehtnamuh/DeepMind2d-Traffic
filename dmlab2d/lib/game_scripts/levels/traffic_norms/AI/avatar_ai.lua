@@ -28,7 +28,7 @@ end
 function AvatarAI:wayPointFollow(grid, piece,orientation)
     local map = maps["logic"].layout
     local me_position = grid:position(piece)
-    local x = (me_position[2] * (25 + 1)) + me_position[1] + 1
+    local x = (me_position[2] * (64 + 1)) + me_position[1] + 1
     local c = map:sub(x, x)
 
     if (c == 'e' and (orientation == 'N' or orientation == 'S')) then

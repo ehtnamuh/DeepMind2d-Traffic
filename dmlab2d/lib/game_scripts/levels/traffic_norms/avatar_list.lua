@@ -25,7 +25,7 @@ local AvatarList = class.Class()
 
 function AvatarList.defaultSettings()
   return {
-      bots = 5,
+      bots = 10,
       framesTillRespawn = 25,
       player = read_settings.default(avatar.Avatar.defaultSettings()),
   }

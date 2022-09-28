@@ -49,10 +49,13 @@ def write_map_to_file(logic_map, map_name, save_location=""):
 
 def main():
     save_path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps"
-    img = imread("playerSpawns.png")
+    a = os.path.join(os.path.abspath(os.getcwd()) + "/imageMaps/playerSpawns2.png")
+    print(a)
+    img = imread(a)
     logic_map = img_to_logic_map(img)
     write_map_to_file(logic_map, "playerSpawns.txt", save_path)
-    img = imread("roadLogic.png")
+    a = os.path.join(os.path.abspath(os.getcwd()) + "/imageMaps/roadLogic2.png")
+    img = imread(a)
     logic_map = img_to_logic_map(img)
     write_map_to_file(logic_map, "roadLogic.txt", save_path)
 
