@@ -14,12 +14,12 @@ limitations under the License.
 ]]
 
 
-local path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
+local path = "/home/samin/Desktop/Projects/DeepMindLab/lab2d/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
 local temp_path = path.."playerSpawns.txt"
 io.input(temp_path)
 local default = io.read("*all")
 io.close()
-local temp_path = path.."roadLogic.txt"
+temp_path = path.."roadLogic.txt"
 io.input(temp_path)
 local logic = io.read("*all")
 io.close()
