@@ -1,0 +1,11 @@
+NE = 00ffff
+NS = 7d00ff
+NW = 007dff
+SE = 00ff7d
+SW = 007d7d
+EW = 7d00ff 
+branch = NSEW = ff0000
+E = 00ff00
+W = 007d00
+N = 0000ff
+S = 00007d
