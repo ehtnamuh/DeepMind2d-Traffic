@@ -1,9 +1,9 @@
-NE = 00ffff
-NS = 7d00ff
-NW = 007dff
-SE = 00ff7d
-SW = 007d7d
-EW = 7d00ff 
+NE = 00ffff = 1
+NS = 7d00ff = 3
+NW = 007dff = 2
+SE = 00ff7d = 4
+SW = 007d7d = 5
+EW = 7dff00 = 6
 branch = NSEW = ff0000
 E = 00ff00
 W = 007d00

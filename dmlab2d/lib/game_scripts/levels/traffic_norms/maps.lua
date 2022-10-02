@@ -34,7 +34,7 @@ maps.logic = logic
 
 local _DEFAULT_STATE_MAP = {
     ['*'] = 'wall',
-    ['p'] = 'spawn.any',
+    ['P'] = 'spawn.any',
 }
 
 local layouts = {}

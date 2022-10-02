@@ -39,7 +39,7 @@ function AvatarAI:wayPointFollow(grid, piece,orientation)
         local C = { 'N', 'S' }
         orientation = C[random:uniformInt(1, #C)]
     end
-    if (c == 'b') then
+    if (c == 'B') then
         if (orientation == 'E') then
             local C = { 'N', 'S', 'E' }
             orientation = C[random:uniformInt(1, #C)]
@@ -56,22 +56,25 @@ function AvatarAI:wayPointFollow(grid, piece,orientation)
     end
 
     local isMoveValid = false
+    local C = {}
     local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
     for tempOrientation, neighbour in pairs(walkableNeighbour) do
         if (tempOrientation == orientation) then
             isMoveValid = true
         end
+        C[#C+1] = tempOrientation
     end
     if(not isMoveValid) then
-        if(orientation == 'N') then
-            orientation = 'S'
-        elseif(orientation == 'S') then
-            orientation = 'N'
-        elseif(orientation == 'E') then
-            orientation = 'W'
-        elseif(orientation == 'W') then
-            orientation = 'E'
-        end
+        orientation = C[random:uniformInt(1, #C)]
+        --if(orientation == 'N') then
+        --    orientation = 'S'
+        --elseif(orientation == 'S') then
+        --    orientation = 'N'
+        --elseif(orientation == 'E') then
+        --    orientation = 'W'
+        --elseif(orientation == 'W') then
+        --    orientation = 'E'
+        --end
     end
     return orientation
 end

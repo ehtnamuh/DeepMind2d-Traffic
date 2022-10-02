@@ -2,11 +2,19 @@ from matplotlib.image import imread
 import os
 
 color_to_symbol = {"#ffffff": "*",
-                   "#ff0000": "b",
-                   "#00ff00": "e",
-                   "#0000ff": "n",
-                   "#ffff00": "p",
-                   "#000000": " "}
+                   "#00ffff": "1",
+                   "#7d00ff": "3",
+                   "#007dff": "2",
+                   "#00ff7d": "4",
+                   "#007d7d": "5",
+                   "#7dff00": "6",
+                   "#ff4200": "B",
+                   "#00ff00": "E",
+                   "#007d00": "W",
+                   "#0000ff": "N",
+                   "#00007d": "S",
+                   "#ffff00": "P",
+                }
 
 
 def color_to_symbol_map(color_string, color_to_symbol_dict=None):
