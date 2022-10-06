@@ -1,6 +1,6 @@
 NE = 00ffff = 1
-NS = 7d00ff = 3
 NW = 007dff = 2
+NS = 7d00ff = 3
 SE = 00ff7d = 4
 SW = 007d7d = 5
 EW = 7dff00 = 6

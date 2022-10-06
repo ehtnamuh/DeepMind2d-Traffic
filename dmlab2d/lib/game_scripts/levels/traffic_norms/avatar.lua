@@ -325,6 +325,7 @@ function Avatar:start(grid, locator, hitByVector)
     self._piece = piece
     self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
     self._orientation = 'N'
+    self._waypoint = ''
     return piece
 end
 
@@ -334,13 +335,20 @@ function Avatar:update(grid)
     if (self._isBot) then
         --local orientation = self._avatar_ai:computeSimpleMove(grid, self._piece,
         --        self._targets[self._missionIndex])
-        self._orientation = self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation)
-        grid:setOrientation(self._piece, self._orientation)
-        grid:moveRel(self._piece, 'N')
-        self._avatar_ai:bot_beam(grid)
+        self._orientation, self._waypoint =
+            self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
+        if(self._orientation ~= 'X') then
+            grid:setOrientation(self._piece, self._orientation)
+            grid:moveRel(self._piece, 'N')
+        end
+        --self._avatar_ai:bot_beam(grid)
     else
-        --self._orientation = self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation)
-        --grid:setOrientation(self._piece, self._orientation)
+        self._orientation = self._avatar_ai:laneChange(grid, self._piece, self._orientation)
+        print("yes")
+        if(self._orientation ~= 'X') then
+            --grid:setOrientation(self._piece, self._orientation)
+            grid:moveRel(self._piece, self._orientation)
+        end
         --grid:moveRel(self._piece, 'N')
         --self._avatar_ai:bot_beam(grid)
         --local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])

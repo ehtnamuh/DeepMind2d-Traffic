@@ -3,8 +3,8 @@ import os
 
 color_to_symbol = {"#ffffff": "*",
                    "#00ffff": "1",
-                   "#7d00ff": "3",
                    "#007dff": "2",
+                    "#7d00ff": "3",
                    "#00ff7d": "4",
                    "#007d7d": "5",
                    "#7dff00": "6",
@@ -14,7 +14,7 @@ color_to_symbol = {"#ffffff": "*",
                    "#0000ff": "N",
                    "#00007d": "S",
                    "#ffff00": "P",
-                }
+                 }
 
 
 def color_to_symbol_map(color_string, color_to_symbol_dict=None):
@@ -56,7 +56,8 @@ def write_map_to_file(logic_map, map_name, save_location=""):
 
 
 def main():
-    save_path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps"
+    # save_path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps"
+    save_path = "../dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps"
     a = os.path.join(os.path.abspath(os.getcwd()) + "/imageMaps/playerSpawns2.png")
     print(a)
     img = imread(a)
