@@ -34,9 +34,12 @@ function AIHelper:omnidirectional_ray_cast(grid, position, layer, ray_dist)
     return hit
 end
 
-function AIHelper:orientation_to_position(position, orientation)
+function AIHelper:orientation_to_position(position, orientation, jumpMagnitude)
     local me_position = {}
-    local dist = 1
+    if(jumpMagnitude == nil) then
+        jumpMagnitude = 1
+    end
+    local dist = jumpMagnitude
     -- N
     if(orientation == 'N') then
         me_position = tables.shallowCopy(position)

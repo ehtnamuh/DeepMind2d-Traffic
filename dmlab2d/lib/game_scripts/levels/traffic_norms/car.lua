@@ -37,11 +37,22 @@ function Car:act(grid)
             end
         end
     else
+        self._orientation, self._waypoint =
+        wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
         local me_position = grid:position(self._piece)
-        local temp = aiHelper:orientation_to_position(me_position, self._orientation)
-        local hit, piece, me_offset = grid:rayCastDirection(grid:layer(self._piece), me_position, {0,1})
+        local temp = aiHelper:orientation_to_position({0,0},self._orientation,5)
+        local hit, piece, me_offset = grid:rayCastDirection(grid:layer(self._piece), me_position, temp)
+        if(self._orientation ~= 'X') then
+            grid:setOrientation(self._piece, self._orientation)
+            for i = 1,(self._velocity) do
+                grid:moveRel(self._piece, 'N')
+            end
+        end
         print(tables.tostring(me_offset, " ", 10))
-        print(tables.tostring(piece, " ", 10))
+        --if(piece ~= nil) then
+        --    print(tables.tostring(piece, " ", 10))
+        --    print(tables.tostring(me_offset, " ", 10))
+        --end
     end
 
     -- Mission system code
