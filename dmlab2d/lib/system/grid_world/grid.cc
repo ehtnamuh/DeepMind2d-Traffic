@@ -15,13 +15,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "dmlab2d/lib/system/grid_world/grid.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
 #include <random>
 #include <utility>
 #include <vector>
+
+#include <string>
+#include <iostream>
 
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
@@ -1019,7 +1021,7 @@ absl::optional<Grid::FindPieceResult> Grid::RayCastDirection(
           return false;
         }
       });
-
+//  std::cout<<direction<<std::endl;
   return result;
 }
 

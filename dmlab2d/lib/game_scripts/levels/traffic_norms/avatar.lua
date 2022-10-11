@@ -19,7 +19,9 @@ local tensor = require 'system.tensor'
 local read_settings = require 'common.read_settings'
 local random = require 'system.random'
 local images = require 'images'
-local avatarAi = require 'AI.avatar_ai'
+local carModel = require 'car'
+--local avatarAi = require 'AI.avatar_ai'
+--local wayPointFollower = require 'AI.waypoint_follower'
 
 local _COMPASS = {'N', 'E', 'S', 'W'}
 local _PLAYER_NAMES = {
@@ -77,7 +79,7 @@ function Avatar.defaultSettings()
             forward = 9,
             backward = 1,
             centered = false,
-            otherPlayersLookSame = false,
+            otherPlayersLookSame = true,
             followPlayer = true,
             thisPlayerLooksBlue = true,
         },
@@ -111,7 +113,7 @@ end
 
 function Avatar:addSprites(tileSet)
     local id = self._index
-    tileSet:addShape('Player.' .. id, images.playerShape(_PLAYER_NAMES[id]))
+    tileSet:addShape('Player.' .. id, images.playerShape(_PLAYER_NAMES[math.fmod(id,20)+1]))
 end
 
 function Avatar:addReward(grid, amount)
@@ -323,8 +325,9 @@ function Avatar:start(grid, locator, hitByVector)
         rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
     self._piece = piece
-    self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
+    --self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
     self._orientation = 'N'
+    self._carModel = carModel.Car{piece=self._piece, orientation=self._orientation, isBot=self._isBot}
     self._waypoint = ''
     return piece
 end
@@ -333,41 +336,16 @@ end
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     if (self._isBot) then
-        --local orientation = self._avatar_ai:computeSimpleMove(grid, self._piece,
-        --        self._targets[self._missionIndex])
-        self._orientation, self._waypoint =
-            self._avatar_ai:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-        if(self._orientation ~= 'X') then
-            grid:setOrientation(self._piece, self._orientation)
-            grid:moveRel(self._piece, 'N')
-        end
-        --self._avatar_ai:bot_beam(grid)
-    else
-        self._orientation = self._avatar_ai:laneChange(grid, self._piece, self._orientation)
-        print("yes")
-        if(self._orientation ~= 'X') then
-            --grid:setOrientation(self._piece, self._orientation)
-            grid:moveRel(self._piece, self._orientation)
-        end
-        --grid:moveRel(self._piece, 'N')
-        --self._avatar_ai:bot_beam(grid)
-        --local orientation  = self._avatar_ai:progressPath(grid, self._piece, self._targets[self._missionIndex])
-        --if(orientation ~= nil) then
-        --    grid:setOrientation(self._piece, orientation)
+        --self._orientation, self._waypoint =
+        --    wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
+        --if(self._orientation ~= 'X') then
+        --    grid:setOrientation(self._piece, self._orientation)
         --    grid:moveRel(self._piece, 'N')
         --end
-        --print(orientation)
+        self._carModel:act(grid)
+    else
     end
-
-    if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
-        self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
-        if (self._missionIndex == 0) then
-            self._missionIndex = 1
-        end
-    end
-
-
 end
 
 
-    return {Avatar = Avatar}
+return {Avatar = Avatar}

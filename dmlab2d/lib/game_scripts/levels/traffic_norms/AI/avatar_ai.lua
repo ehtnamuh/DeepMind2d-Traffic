@@ -7,8 +7,8 @@
 local class = require 'common.class'
 local random = require 'system.random'
 local aiHelper = require 'AI.avatar_ai_helper'
-local maps = require 'maps'
-local tables = require 'common.tables'
+--local maps = require 'maps'
+--local tables = require 'common.tables'
 
 local AvatarAI = class.Class()
 local _COMPASS = { 'N', 'E', 'S', 'W' }
@@ -24,113 +24,6 @@ end
 
 function AvatarAI:bot_beam(grid)
     --TODO:
-end
-
-function AvatarAI:waypointInterpreter(waypoint, orientation)
-    local indexToWaypoints = {
-        ["1"] = {'N', 'E'},
-        ["2"] = {'N', 'W'},
-        ["3"] = {'N', 'S'},
-        ["4"] = {'S', 'E'},
-        ["5"] = {'S', 'W'},
-        ["6"] = {'E', 'W'},
-        ["B"] = {'N', 'E', 'S', 'W'},
-        ["E"] = {'E'},
-        ["W"] = {'W'},
-        ["N"] = {'N'},
-        ["S"] = {'S'}
-    }
-    local newOrientations = indexToWaypoints[waypoint]
-    return newOrientations
-end
-
-function AvatarAI:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
-    -- MOVE FILTRATION
-    -- car already branched on a previous node and cannot branch consecutively
-    if (last_waypoint == 'B') then
-        return {orientation}
-    end
-    -- remove illegal nodes
-    for key, newOrientation in pairs(newOrientations) do
-        local isMoveValid = false
-        for tempOrientation, neighbour in pairs(walkableNeighbour) do
-            if (tempOrientation == newOrientation) then
-                isMoveValid = true
-            end
-        end
-        if(not isMoveValid) then
-           tables.removeValue(newOrientations, newOrientation)
-        end
-    end
-    -- remove 180 turn
-    local oppositeOrientation = {
-        ['E'] = 'W',
-        ['W'] = 'E',
-        ['N'] = 'S',
-        ['S'] = 'N'
-    }
-    if(#newOrientations > 1) then
-        tables.removeValue(newOrientations, oppositeOrientation[orientation])
-    end
-    return newOrientations
-end
-
-function AvatarAI:wayPointFollow(grid, piece, orientation, last_waypoint)
-    -- WAYPOINT INTERPRETATION
-    local map = maps["logic"].layout
-    local me_position = grid:position(piece)
-    local x = (me_position[2] * (64 + 1)) + me_position[1] + 1
-    local waypoint = map:sub(x, x)
-    local newOrientations = self:waypointInterpreter(waypoint, orientation)
-
-    -- FILTER MOVE
-    local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
-    newOrientations = self:filterMove(newOrientations,orientation,walkableNeighbour,last_waypoint)
-
-    -- Car cannot follow waypoint and must find another path
-    if(#newOrientations <= 0) then
-        newOrientations = {'N','S','E','W'}
-        newOrientations = self:filterMove(newOrientations,orientation,walkableNeighbour,last_waypoint)
-    end
-
-    -- Handles error when Car blocked from all sides
-    -- Indicates that no action can be taken
-    if(#newOrientations <= 0) then
-        return 'X'
-    end
-
-    -- SELECT RANDOM MOVE FROM REMAINING
-    orientation = newOrientations[random:uniformInt(1, #newOrientations)]
-    return orientation, waypoint
-end
-
-function AvatarAI:laneChange(grid, piece, orientation)
-    -- WAYPOINT INTERPRETATION
-    local map = maps["logic"].layout
-    local me_position = grid:position(piece)
-    --local x = (me_position[2] * (64 + 1)) + me_position[1] + 1
-    --local waypoint = map:sub(x, x)
-    --local newOrientations = self:waypointInterpreter(waypoint, orientation)
-    tables.tostring(me_position)
-    local temp = aiHelper:orientation_to_position({0,0}, orientation)
-    --local _, _, me_offset = grid:rayCastDirection(grid:layer(piece), me_position, orientation)
-
-    local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
-    local validLanes = {}
-    for tempOrientation, position in pairs(walkableNeighbour) do
-        if (tempOrientation == orientation) then
-            validLanes[#validLanes+1] = position
-            --local temp = aiHelper:orientation_to_position({0,0}, orientation)
-            --local _, _, offset = grid:rayCastDirection(grid:layer(piece), position, temp)
-            --if(offset>me_offset) then
-            --    print("lane CHANGE")
-            --    return tempOrientation
-            --end
-        end
-    end
-    -- SELECT RANDOM MOVE FROM REMAINING
-    orientation = 'X'
-    return orientation
 end
 
 -- Simple bot moving AI function, return a direction to move in
@@ -334,7 +227,7 @@ function AvatarAI:unwindPath(parentTable, goal)
     return path
 end
 
--- UTILITIES
+-- Exposed UTILITIES from AIHelper
 function AvatarAI:positionEquality(position, target)
     return aiHelper:pEquality(position, target)
 end
