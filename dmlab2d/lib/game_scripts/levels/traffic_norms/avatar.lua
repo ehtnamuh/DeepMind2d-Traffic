@@ -335,16 +335,7 @@ end
 
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
-    if (self._isBot) then
-        --self._orientation, self._waypoint =
-        --    wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-        --if(self._orientation ~= 'X') then
-        --    grid:setOrientation(self._piece, self._orientation)
-        --    grid:moveRel(self._piece, 'N')
-        --end
-        self._carModel:act(grid)
-    else
-    end
+    self._carModel:act(grid)
 end
 
 

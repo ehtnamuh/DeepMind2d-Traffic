@@ -37,16 +37,13 @@ function Car:act(grid)
             end
         end
     else
-        --self._orientation = self._avatar_ai:laneChange(grid, self._piece, self._orientation)
-        --if(self._orientation ~= 'X') then
-        --    --grid:setOrientation(self._piece, self._orientation)
-        --    grid:moveRel(self._piece, self._orientation)
-        --end
+        local me_position = grid:position(self._piece)
+        local temp = aiHelper:orientation_to_position(me_position, self._orientation)
+        local hit, piece, me_offset = grid:rayCastDirection(grid:layer(self._piece), me_position, {0,1})
+        print(tables.tostring(me_offset, " ", 10))
+        print(tables.tostring(piece, " ", 10))
     end
-    local me_position = grid:position(self._piece)
-    local temp = aiHelper:orientation_to_position(me_position, self._orientation)
-    local _, _, me_offset = grid:rayCastDirection(grid:layer(self._piece), me_position, temp)
-    print(tables.tostring(me_position, " ", 10))
+
     -- Mission system code
     -- if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
     --    self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)

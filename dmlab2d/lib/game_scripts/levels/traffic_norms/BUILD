@@ -9,6 +9,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "traffic_norms/text_maps",
+    srcs = glob(["*.txt"]),
+    visibility = ["//visibility:public"],
+)
+
+
 #dmlab2d_lua_level_test(
 #    name = "commons_harvest_test",
 #    main = "init.lua",
