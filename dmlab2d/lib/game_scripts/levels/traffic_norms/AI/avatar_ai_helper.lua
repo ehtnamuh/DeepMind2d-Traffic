@@ -34,6 +34,7 @@ function AIHelper:omnidirectional_ray_cast(grid, position, layer, ray_dist)
     return hit
 end
 
+
 function AIHelper:orientation_to_position(position, orientation, jumpMagnitude)
     local me_position = {}
     if(jumpMagnitude == nil) then
@@ -90,6 +91,17 @@ function AIHelper:pString(position)
     return position[1] .. "," .. position[2]
 end
 
+
+function AIHelper:pEquality(position, target)
+    local x =  target[1] - position[1]
+    local y =  target[2] - position[2]
+
+    if (x == 0 and y == 0) then
+        return true
+    else
+        return false
+    end
+end
 
 function AIHelper:pEquality(position, target)
     local x =  target[1] - position[1]

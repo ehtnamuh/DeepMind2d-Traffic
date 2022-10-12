@@ -15,17 +15,17 @@ WPFollower.__index = WPFollower
 
 function WPFollower:waypointInterpreter(waypoint)
     local indexToWaypoints = {
-        ["1"] = {'N', 'E'},
-        ["2"] = {'N', 'W'},
-        ["3"] = {'N', 'S'},
-        ["4"] = {'S', 'E'},
-        ["5"] = {'S', 'W'},
-        ["6"] = {'E', 'W'},
-        ["B"] = {'N', 'E', 'S', 'W'},
-        ["E"] = {'E'},
-        ["W"] = {'W'},
-        ["N"] = {'N'},
-        ["S"] = {'S'}
+        ["1"] = { 'N', 'E' },
+        ["2"] = { 'N', 'W' },
+        ["3"] = { 'N', 'S' },
+        ["4"] = { 'S', 'E' },
+        ["5"] = { 'S', 'W' },
+        ["6"] = { 'E', 'W' },
+        ["B"] = { 'N', 'E', 'S', 'W' },
+        ["E"] = { 'E' },
+        ["W"] = { 'W' },
+        ["N"] = { 'N' },
+        ["S"] = { 'S' }
     }
     local newOrientations = indexToWaypoints[waypoint]
     return newOrientations
@@ -35,7 +35,7 @@ function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, 
     -- MOVE FILTRATION
     -- car already branched on a previous node and cannot branch consecutively
     if (last_waypoint == 'B') then
-        return {orientation}
+        return { orientation }
     end
     -- remove illegal nodes
     for key, newOrientation in pairs(newOrientations) do
@@ -45,8 +45,8 @@ function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, 
                 isMoveValid = true
             end
         end
-        if(not isMoveValid) then
-           tables.removeValue(newOrientations, newOrientation)
+        if (not isMoveValid) then
+            tables.removeValue(newOrientations, newOrientation)
         end
     end
     -- remove 180 turn
@@ -56,7 +56,7 @@ function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, 
         ['N'] = 'S',
         ['S'] = 'N'
     }
-    if(#newOrientations > 1) then
+    if (#newOrientations > 1) then
         tables.removeValue(newOrientations, oppositeOrientation[orientation])
     end
     return newOrientations
@@ -67,27 +67,31 @@ function WPFollower:CoordinateTranslation(position, imgWidth)
     return map_coordinate
 end
 
+function WPFollower:ExtractWaypoint(position, imgWidth)
+    local map = maps["logic"].layout
+    local map_coordinate = self:CoordinateTranslation(position, imgWidth)
+    return map:sub(map_coordinate, map_coordinate)
+end
+
 function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     -- WAYPOINT INTERPRETATION
-    local map = maps["logic"].layout
     local me_position = grid:position(piece)
-    local x = (me_position[2] * (64 + 1)) + me_position[1] + 1
-    local waypoint = map:sub(x, x)
+    local waypoint = self:ExtractWaypoint(me_position, 64)
     local newOrientations = self:waypointInterpreter(waypoint, orientation)
 
     -- FILTER MOVE
     local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
-    newOrientations = self:filterMove(newOrientations,orientation,walkableNeighbour,last_waypoint)
+    newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
 
     -- Car cannot follow waypoint and must find another path
-    if(#newOrientations <= 0) then
-        newOrientations = {'N','S','E','W'}
-        newOrientations = self:filterMove(newOrientations,orientation,walkableNeighbour,last_waypoint)
+    if (#newOrientations <= 0) then
+        newOrientations = { 'N', 'S', 'E', 'W' }
+        newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
     end
 
     -- Handles error when Car blocked from all sides
     -- Indicates that no action can be taken
-    if(#newOrientations <= 0) then
+    if (#newOrientations <= 0) then
         return 'X'
     end
 
@@ -96,34 +100,39 @@ function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     return orientation, waypoint
 end
 
--- ISSUE LANE CHANGER RAYCAST NOT WORKING
-function WPFollower:laneChange(grid, piece, orientation)
-    -- WAYPOINT INTERPRETATION
-    local map = maps["logic"].layout
+-- Lane Changing logic
+function WPFollower:LaneChange(grid, piece, orientation, rayCastLength)
+    if(rayCastLength == nil) then
+        rayCastLength = 4
+    end
+    print(rayCastLength)
+    -- Length for which lane is checked
     local me_position = grid:position(piece)
-    --local x = (me_position[2] * (64 + 1)) + me_position[1] + 1
-    --local waypoint = map:sub(x, x)
-    --local newOrientations = self:waypointInterpreter(waypoint, orientation)
-    --print(tables.tostring(me_position))
-    local temp = aiHelper:orientation_to_position(me_position, orientation)
-    --local _, _, me_offset = grid:rayCastDirection(grid:layer(piece), me_position, temp)
-
+    -- calculate direction of rayCast from orientation
+    local direction = aiHelper:orientation_to_position({ 0, 0 }, orientation, rayCastLength)
+    -- get offset from piece in front, ignore hit bool, piece object.
+    local _, _, me_offset = grid:rayCastDirection(grid:layer(piece), me_position, direction)
+    -- search walkableNeighbours for valid lanes to switch to
     local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
-    local validLanes = {}
+    local max_offset_dist = aiHelper:L2_distance({0,0}, me_offset)
+    local selected_lane = 'X'
     for tempOrientation, position in pairs(walkableNeighbour) do
-        if (tempOrientation == orientation) then
-            validLanes[#validLanes+1] = position
-            --local temp = aiHelper:orientation_to_position({0,0}, orientation)
-            --local _, _, offset = grid:rayCastDirection(grid:layer(piece), position, temp)
-            --if(offset>me_offset) then
-            --    print("lane CHANGE")
-            --    return tempOrientation
-            --end
+        local waypoint = self:ExtractWaypoint(position, 64)
+        local newOrientations = self:waypointInterpreter(waypoint, orientation)
+        if (#newOrientations > 2) then
+            break
+        end
+        if (newOrientations[1] == orientation) then
+            direction = aiHelper:orientation_to_position({ 0, 0 }, orientation, rayCastLength)
+            local _, _, offset = grid:rayCastDirection(grid:layer(piece), position, direction)
+            if (aiHelper:L2_distance({0,0}, offset) > max_offset_dist) then
+                max_offset_dist = aiHelper:L2_distance({0,0}, offset)
+                selected_lane = tempOrientation
+                print("LANE CHANGE")
+            end
         end
     end
-    -- SELECT RANDOM MOVE FROM REMAINING
-    orientation = 'X'
-    return orientation
+    return selected_lane
 end
 
 return WPFollower
