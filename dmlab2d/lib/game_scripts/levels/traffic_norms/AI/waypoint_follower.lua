@@ -13,6 +13,7 @@ local tables = require 'common.tables'
 local WPFollower = {}
 WPFollower.__index = WPFollower
 
+-- Waypoint follower core logic
 function WPFollower:waypointInterpreter(waypoint)
     local indexToWaypoints = {
         ["1"] = { 'N', 'E' },
@@ -105,7 +106,6 @@ function WPFollower:LaneChange(grid, piece, orientation, rayCastLength)
     if(rayCastLength == nil) then
         rayCastLength = 4
     end
-    print(rayCastLength)
     -- Length for which lane is checked
     local me_position = grid:position(piece)
     -- calculate direction of rayCast from orientation
@@ -119,6 +119,11 @@ function WPFollower:LaneChange(grid, piece, orientation, rayCastLength)
     for tempOrientation, position in pairs(walkableNeighbour) do
         local waypoint = self:ExtractWaypoint(position, 64)
         local newOrientations = self:waypointInterpreter(waypoint, orientation)
+        if(newOrientations==nil) then
+            print("nil waypoint"..waypoint)
+            print(tables.tostring(position))
+            break
+        end
         if (#newOrientations > 2) then
             break
         end
@@ -128,7 +133,6 @@ function WPFollower:LaneChange(grid, piece, orientation, rayCastLength)
             if (aiHelper:L2_distance({0,0}, offset) > max_offset_dist) then
                 max_offset_dist = aiHelper:L2_distance({0,0}, offset)
                 selected_lane = tempOrientation
-                print("LANE CHANGE")
             end
         end
     end

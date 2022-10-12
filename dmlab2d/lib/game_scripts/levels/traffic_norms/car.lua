@@ -19,11 +19,12 @@ function Car:__init__(kwargs)
     self._orientation = kwargs.orientation
     self._piece = kwargs.piece
     self._waypoint = ''
-    self._timeGap = 0.5
-    self._max_speed = 3
+    self._timeGap = 3
+    self._max_velocity = 3
     self._maxAcceleration = 1
     self._acceleration = 0
     self._velocity = 1
+    self._rayCastLength = 6
 end
 
 function Car:act(grid)
@@ -35,10 +36,16 @@ function Car:act(grid)
                 grid:moveRel(self._piece, 'N')
             end
         end
+        local lane_orientation = wayPointFollower:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
+        if(lane_orientation ~= 'X') then
+            grid:moveAbs(self._piece, lane_orientation)
+        end
     else
         self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
         if (self._orientation ~= 'X') then
             grid:setOrientation(self._piece, self._orientation)
+            --self:safeGapCalculation(grid,self._piece,self._orientation,self._rayCastLength)
+            --self:updateSpeed()
             for i = 1, (self._velocity) do
                 grid:moveRel(self._piece, 'N')
             end
@@ -47,36 +54,7 @@ function Car:act(grid)
         if(lane_orientation ~= 'X') then
             grid:moveAbs(self._piece, lane_orientation)
         end
-        --print(tables.tostring(me_offset, " ", 10))
-        -- Lane Changing logic
-        --local rayCastLength = 16
-        --local me_position = grid:position(self._piece)
-        --local temp = aiHelper:orientation_to_position({ 0, 0 }, self._orientation, rayCastLength)
-        --local hit, piece, me_offset = grid:rayCastDirection(grid:layer(self._piece), me_position, temp)
-        --piece = self._piece
-        --local orientation = self._orientation
-        --local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
-        --local validLanes = {}
-        --for tempOrientation, position in pairs(walkableNeighbour) do
-        --    local waypoint = wayPointFollower:ExtractWaypoint(position,64)
-        --    local newOrientations = wayPointFollower:waypointInterpreter(waypoint, orientation)
-        --    if(#newOrientations>2) then
-        --        break
-        --    end
-        --    if (newOrientations[1] == orientation) then
-        --        validLanes[#validLanes + 1] = position
-        --        temp = aiHelper:orientation_to_position({0,0}, orientation, rayCastLength)
-        --        local _, _, offset = grid:rayCastDirection(grid:layer(piece), position, temp)
-        --        if(aiHelper:L2_distance({ 0,0 },offset)>aiHelper:L2_distance({ 0,0 }, me_offset)) then
-        --            print("lane CHANGE")
-        --            print("selfOri: "..self._orientation.."  temp: "..tempOrientation)
-        --            --grid:setOrientation(self._piece, tempOrientation)
-        --            grid:moveAbs(self._piece, tempOrientation)
-        --        end
-        --    end
-        --end
     end
-
     -- Mission system code
     -- if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
     --    self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
@@ -90,6 +68,10 @@ function Car:accelerate()
     if self._acceleration >= self._maxAcceleration then
         return
     end
+    if(self._velocity >= self._max_velocity) then
+        self._acceleration = 0
+        return
+    end
     self._acceleration = self._acceleration + 1
 end
 
@@ -97,31 +79,50 @@ function Car:decelerate()
     if self._acceleration <= -1 then
         return
     end
+    if(self._velocity <= 0) then
+        self._acceleration = 0
+        return
+    end
     self._acceleration = self._acceleration - 1
 end
 
 function Car:updateSpeed()
-    if self._velocity >= self._max_speed then
+    if self._velocity >= self._max_velocity then
+        self._velocity = self._max_velocity
         return
+    end
+    if self._velocity <= 0 then
+        self._velocity = 0
     end
     self._velocity = self._velocity + self._acceleration
 end
 
-function Car:safeGapCalculation(myPosition, otherPosition, myVel, otherVel, myOtherDir)
+function Car:safeGapCalculation(grid, piece, orientation, rayCastLength)
     -- Also take velocity of both cars as arguments
     -- difference between the two velocities is added to the distance
     -- must also take direction of movement as input
     -- if two cars are moving in opposite directions then multiply one with -1
+    if(rayCastLength == nil) then
+        rayCastLength = 4
+    end
 
-    local displacement = aiHelper:L2_distance(myPosition, otherPosition)
-    local crash_time = displacement / self._velocity
-    local stop_time = self._velocity / self._acceleration
-    local time_gap = stop_time - crash_time
+    local me_position = grid:position(piece)
+    local direction = aiHelper:orientation_to_position({ 0, 0 }, orientation, rayCastLength)
+    -- get offset from piece in front, ignore hit bool, piece object.
+    local _, _, offset = grid:rayCastDirection(grid:layer(piece), me_position, direction)
+
+    local displacement = aiHelper:L2_distance({0,0}, offset)
+    local crash_time = displacement / self._max_velocity
+    local stop_time = self._velocity / self._maxAcceleration
+    print("stp time:"..stop_time.." vel"..self._velocity.." crash tiem: "..crash_time)
+    local time_gap = math.abs(stop_time - crash_time)
     if (time_gap > self._timeGap) then
-        print("Safe")
+        print("Safe: "..time_gap.." vel: "..self._velocity)
+        self:accelerate()
         return true
     end
-    print("UnSafe")
+    self:decelerate()
+    print("UnSafe "..time_gap.." vel: "..self._velocity)
     return false
 end
 
