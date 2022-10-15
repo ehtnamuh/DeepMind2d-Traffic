@@ -33,6 +33,9 @@ function WPFollower:waypointInterpreter(waypoint)
 end
 
 function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
+    if(newOrientations==nil) then
+        return nil
+    end
     -- MOVE FILTRATION
     -- car already branched on a previous node and cannot branch consecutively
     if (last_waypoint == 'B') then
@@ -85,6 +88,9 @@ function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
 
     -- Car cannot follow waypoint and must find another path
+    if(newOrientations==nil) then
+        return 'X'
+    end
     if (#newOrientations <= 0) then
         newOrientations = { 'N', 'S', 'E', 'W' }
         newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)

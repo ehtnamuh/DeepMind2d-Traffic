@@ -197,7 +197,7 @@ function Avatar:addPlayerCallbacks(callbacks)
         if playerResetsAfterZap then
             grid:setState(player, self._waitState)
         end
-        -- Beams do not pass through zapped players.
+        -- Beams pass through zapped players.
         return false
     end
     function activeState.onHit.direction(grid, player, zapper)
@@ -314,10 +314,13 @@ function Avatar:start(grid, locator, hitByVector)
     targetTransform.orientation = _COMPASS[random:uniformInt(1, #_COMPASS)]
     local piece = grid:createPiece(self._activeState, targetTransform)
     local rewardForLastApple = self._settings.rewardForEatingLastAppleInRadius
+
+    self._carModel = carModel.Car{piece=nil, orientation=self._orientation, isBot=self._isBot}
     grid:setUserState(piece, {
         reward = 0,
         canZapAfterFrames = 0,
         actions = actions,
+        carModel = self._carModel,
         index = self._index,
         hitByVector = hitByVector,
         rewardForZapping = self._settings.rewardForZapping,
@@ -325,9 +328,8 @@ function Avatar:start(grid, locator, hitByVector)
         rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
     self._piece = piece
-    --self._avatar_ai = avatarAi.AvatarAI{ piece = self._piece}
+    self._carModel:setPiece(self._piece)
     self._orientation = 'N'
-    self._carModel = carModel.Car{piece=self._piece, orientation=self._orientation, isBot=self._isBot}
     self._waypoint = ''
     return piece
 end

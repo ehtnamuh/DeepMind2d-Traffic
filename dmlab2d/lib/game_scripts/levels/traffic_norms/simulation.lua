@@ -52,12 +52,6 @@ function Simulation:worldConfig()
               sprite = 'Wall',
           },
           ['spawn.any'] = {groups = {'spawn.any'}},
-          apple = {
-              layer = 'logic',
-              sprite = 'Apple',
-          },
-          ['apple.wait'] = {layer = 'waitCalc'},
-          ['apple.possible'] = {},
       }
   }
   local waitNames = {}
