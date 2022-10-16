@@ -33,9 +33,6 @@ function WPFollower:waypointInterpreter(waypoint)
 end
 
 function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
-    if(newOrientations==nil) then
-        return nil
-    end
     -- MOVE FILTRATION
     -- car already branched on a previous node and cannot branch consecutively
     if (last_waypoint == 'B') then
@@ -74,7 +71,11 @@ end
 function WPFollower:ExtractWaypoint(position, imgWidth)
     local map = maps["logic"].layout
     local map_coordinate = self:CoordinateTranslation(position, imgWidth)
-    return map:sub(map_coordinate, map_coordinate)
+    local waypoint =map:sub(map_coordinate, map_coordinate)
+    if(waypoint == 'B') then
+        print(tables.tostring(position))
+    end
+    return waypoint
 end
 
 function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
@@ -88,9 +89,6 @@ function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
 
     -- Car cannot follow waypoint and must find another path
-    if(newOrientations==nil) then
-        return 'X'
-    end
     if (#newOrientations <= 0) then
         newOrientations = { 'N', 'S', 'E', 'W' }
         newOrientations = self:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
@@ -99,7 +97,7 @@ function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     -- Handles error when Car blocked from all sides
     -- Indicates that no action can be taken
     if (#newOrientations <= 0) then
-        return 'X'
+        return 'X','X'
     end
 
     -- SELECT RANDOM MOVE FROM REMAINING

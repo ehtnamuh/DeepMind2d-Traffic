@@ -34,6 +34,9 @@ end
 function Car:act(grid)
     if (self._isBot) then
         self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
+        if(self._orientation == 'X') then
+            print("Car TOTALLED")
+        end
         if (self._orientation ~= 'X') then
             grid:setOrientation(self._piece, self._orientation)
             self:safeGapCalculation(grid, self._piece, self._orientation, self._rayCastLength)
