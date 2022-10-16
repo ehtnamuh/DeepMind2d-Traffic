@@ -13,7 +13,7 @@ local tables = require 'common.tables'
 local WPFollower = {}
 WPFollower.__index = WPFollower
 
--- Waypoint follower core logic
+-- Waypoint follower map character to allowed-actions
 function WPFollower:waypointInterpreter(waypoint)
     local indexToWaypoints = {
         ["1"] = { 'N', 'E' },
@@ -28,9 +28,18 @@ function WPFollower:waypointInterpreter(waypoint)
         ["N"] = { 'N' },
         ["S"] = { 'S' }
     }
-    local newOrientations = indexToWaypoints[waypoint]
-    return newOrientations
+    return indexToWaypoints[waypoint]
 end
+
+--
+function WPFollower:TriggerInterpreter(waypoint)
+    local indexToTrigger= {
+        ["1"] = "intersection",
+        ["2"] = "lane"
+    }
+    return indexToTrigger[waypoint]
+end
+
 
 function WPFollower:filterMove(newOrientations, orientation, walkableNeighbour, last_waypoint)
     -- MOVE FILTRATION
@@ -72,12 +81,17 @@ function WPFollower:ExtractWaypoint(position, imgWidth)
     local map = maps["logic"].layout
     local map_coordinate = self:CoordinateTranslation(position, imgWidth)
     local waypoint =map:sub(map_coordinate, map_coordinate)
-    if(waypoint == 'B') then
-        print(tables.tostring(position))
-    end
     return waypoint
 end
 
+function WPFollower:ExtractTrigger(position, imgWidth)
+    local map = maps["trigger"].layout
+    local map_coordinate = self:CoordinateTranslation(position, imgWidth)
+    local waypoint =map:sub(map_coordinate, map_coordinate)
+    return waypoint
+end
+
+-- Waypoint Following logic
 function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     -- WAYPOINT INTERPRETATION
     local me_position = grid:position(piece)
@@ -97,6 +111,7 @@ function WPFollower:wayPointFollow(grid, piece, orientation, last_waypoint)
     -- Handles error when Car blocked from all sides
     -- Indicates that no action can be taken
     if (#newOrientations <= 0) then
+        -- This never runs but is a failsafe
         return 'X','X'
     end
 
@@ -112,22 +127,29 @@ function WPFollower:LaneChange(grid, piece, orientation, rayCastLength)
     end
     -- Length for which lane is checked
     local me_position = grid:position(piece)
+
+    -- Check if car is in lane
+    local trigger = self:TriggerInterpreter(self:ExtractTrigger(me_position, 64))
+    if(trigger ~= "lane") then return 'X' end
+
     -- calculate direction of rayCast from orientation
     local direction = aiHelper:orientation_to_position({ 0, 0 }, orientation, rayCastLength)
     -- get offset from piece in front, ignore hit bool, piece object.
     local _, _, me_offset = grid:rayCastDirection(grid:layer(piece), me_position, direction)
+
     -- search walkableNeighbours for valid lanes to switch to
     local walkableNeighbour = aiHelper:walkable_nodes(grid, me_position, grid:layer(piece))
     local max_offset_dist = aiHelper:L2_distance({0,0}, me_offset)
     local selected_lane = 'X'
+
     for tempOrientation, position in pairs(walkableNeighbour) do
         local waypoint = self:ExtractWaypoint(position, 64)
         local newOrientations = self:waypointInterpreter(waypoint, orientation)
-        if(newOrientations==nil) then
-            print("nil waypoint"..waypoint)
-            print(tables.tostring(position))
-            break
-        end
+        --if(newOrientations==nil) then
+        --    print("nil waypoint"..waypoint)
+        --    print(tables.tostring(position))
+        --    break
+        --end
         if (#newOrientations > 2) then
             break
         end

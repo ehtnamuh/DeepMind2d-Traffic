@@ -20,10 +20,10 @@ function Car:__init__(kwargs)
     self._piece = kwargs.piece
     self._waypoint = ''
     self._timeGap = 3
-    self._max_velocity = 3
+    self._max_velocity = 1
     self._maxAcceleration = 1
     self._acceleration = 0
-    self._velocity = 1
+    self._velocity = 3
     self._rayCastLength = 6
 end
 
@@ -34,13 +34,13 @@ end
 function Car:act(grid)
     if (self._isBot) then
         self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-        if(self._orientation == 'X') then
+        if(self._orientation == 'X' or self._waypoint == 'X') then
             print("Car TOTALLED")
         end
         if (self._orientation ~= 'X') then
             grid:setOrientation(self._piece, self._orientation)
             self:safeGapCalculation(grid, self._piece, self._orientation, self._rayCastLength)
-            self:updateSpeed()
+            self:updateSpeed(grid)
             for i = 1, (self._velocity) do
                 grid:moveRel(self._piece, 'N')
             end
@@ -50,20 +50,11 @@ function Car:act(grid)
             grid:moveAbs(self._piece, lane_orientation)
         end
     else
-        --self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-        --if (self._orientation ~= 'X') then
-        --    grid:setOrientation(self._piece, self._orientation)
-        --    self:safeGapCalculation(grid, self._piece, self._orientation, self._rayCastLength)
-        --    self:updateSpeed()
-        --    for i = 1, (self._velocity) do
-        --        grid:moveRel(self._piece, 'N')
-        --    end
-        --end
-        --local lane_orientation = wayPointFollower:LaneChange(grid, self._piece, self._orientation, 6)
-        --if (lane_orientation ~= 'X') then
-        --    grid:moveAbs(self._piece, lane_orientation)
-        --end
+
     end
+    self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
+    self:updateSpeed(grid)
+    local lane_orientation = wayPointFollower:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
     -- Legacy Mission system code
     -- if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
     --    self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
@@ -96,7 +87,13 @@ function Car:brake()
     self._acceleration = self._acceleration - 1
 end
 
-function Car:updateSpeed()
+function Car:updateSpeed(grid)
+    local trigger = wayPointFollower:TriggerInterpreter(wayPointFollower:ExtractTrigger(grid:position(self._piece), 64))
+    if(trigger == 'intersection') then
+        self._max_velocity = 1
+    else
+        self._max_velocity = 3
+    end
     if self._velocity >= self._max_velocity then
         self._velocity = self._max_velocity
         return
@@ -144,12 +141,12 @@ function Car:safeGapCalculation(grid, piece, orientation, rayCastLength)
         return true
     elseif (time_gap <= (self._timeGap - 0.5)) then
         self:brake()
-        print("Brake!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
+        --print("Brake!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
         --print("stp time:"..stop_time.." vel"..self._velocity.." crash time: "..crash_time)
         --print("UnSafe "..time_gap.." vel: "..self._velocity)
         return false
     end
-    print("Cruise!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
+    --print("Cruise!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
 end
 
 function Car:getVelocity()

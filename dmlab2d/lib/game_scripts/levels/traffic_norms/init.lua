@@ -26,7 +26,7 @@ return function(mapName)
       AvatarList = avatar_list.AvatarList,
       settings = {
           simulation = {mapName = mapName},
-          episodeLengthFrames = 1000,
+          episodeLengthFrames = 100000,
           spriteSize = 8,
       }
   }

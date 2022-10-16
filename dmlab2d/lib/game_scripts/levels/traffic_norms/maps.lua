@@ -13,8 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ]]
 
-
-local path = "/home/samin/Desktop/Projects/DeepMindLab/lab2d/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
+-- Critical problem, absolute path to text maps has to be loaded each time location of project changes
+-- Have to find a way to fix this
+local path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
 
 local temp_path = path.."playerSpawns.txt"
 io.input(temp_path)
@@ -26,6 +27,11 @@ io.input(temp_path)
 local logic = io.read("*all")
 io.close()
 
+temp_path = path.."roadTriggers.txt"
+io.input(temp_path)
+local trigger = io.read("*all")
+io.close()
+
 local maps = {}
 
 
@@ -33,6 +39,7 @@ maps.default = default
 
 maps.logic = logic
 
+maps.trigger = trigger
 
 local _DEFAULT_STATE_MAP = {
     ['*'] = 'wall',
