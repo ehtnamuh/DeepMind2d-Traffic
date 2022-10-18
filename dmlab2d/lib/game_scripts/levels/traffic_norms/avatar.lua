@@ -315,7 +315,8 @@ function Avatar:start(grid, locator, hitByVector)
     local piece = grid:createPiece(self._activeState, targetTransform)
     local rewardForLastApple = self._settings.rewardForEatingLastAppleInRadius
 
-    self._carModel = carModel.Car{piece=nil, orientation=self._orientation, isBot=self._isBot}
+    self._piece = piece
+    self._carModel = carModel.Car{piece=piece, orientation=self._orientation, isBot=self._isBot}
     grid:setUserState(piece, {
         reward = 0,
         canZapAfterFrames = 0,
@@ -327,8 +328,7 @@ function Avatar:start(grid, locator, hitByVector)
         rewardForBeingZapped = self._settings.rewardForBeingZapped,
         rewardForEatingLastAppleInRadius = rewardForLastApple,
     })
-    self._piece = piece
-    self._carModel:setPiece(self._piece)
+    --self._carModel:setPiece(self._piece)
     self._orientation = 'N'
     self._waypoint = ''
     return piece
@@ -338,6 +338,7 @@ end
 function Avatar:update(grid)
     grid:userState(self._piece).reward = 0
     self._carModel:act(grid)
+    return "works"
 end
 
 

@@ -25,6 +25,7 @@ function Car:__init__(kwargs)
     self._acceleration = 0
     self._velocity = 3
     self._rayCastLength = 6
+    self._priority = 0 -- higher is better
 end
 
 function Car:setPiece(piece)
@@ -40,7 +41,7 @@ function Car:act(grid)
         if (self._orientation ~= 'X') then
             grid:setOrientation(self._piece, self._orientation)
             self:safeGapCalculation(grid, self._piece, self._orientation, self._rayCastLength)
-            self:updateSpeed(grid)
+            self:updateCarState(grid)
             for i = 1, (self._velocity) do
                 grid:moveRel(self._piece, 'N')
             end
@@ -87,13 +88,20 @@ function Car:brake()
     self._acceleration = self._acceleration - 1
 end
 
-function Car:updateSpeed(grid)
+
+function Car:updateCarState(grid)
     local trigger = wayPointFollower:TriggerInterpreter(wayPointFollower:ExtractTrigger(grid:position(self._piece), 64))
     if(trigger == 'intersection') then
         self._max_velocity = 1
-    else
+        self._priority = 1
+    elseif(trigger == 'lane') then
+        self._priority = 3
         self._max_velocity = 3
     end
+    self:updateSpeed()
+end
+
+function Car:updateSpeed()
     if self._velocity >= self._max_velocity then
         self._velocity = self._max_velocity
         return
