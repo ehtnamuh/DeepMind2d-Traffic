@@ -5,11 +5,10 @@
 ---
 ---
 local class = require 'common.class'
-local random = require 'system.random'
 local aiHelper = require 'AI.avatar_ai_helper'
 local wayPointFollower = require 'AI.waypoint_follower'
-local tables = require 'common.tables'
-
+local laneChanger = require 'AI.lane_changer'
+local map_interpreter = require 'AI.map_interpreter'
 local Car = class.Class()
 
 function Car:__init__(kwargs)
@@ -20,7 +19,7 @@ function Car:__init__(kwargs)
     self._piece = kwargs.piece
     self._waypoint = ''
     self._timeGap = 3
-    self._max_velocity = 1
+    self._max_velocity = 3
     self._maxAcceleration = 1
     self._acceleration = 0
     self._velocity = 3
@@ -35,7 +34,7 @@ end
 function Car:act(grid)
     if (self._isBot) then
         self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-        if(self._orientation == 'X' or self._waypoint == 'X') then
+        if (self._orientation == 'X' or self._waypoint == 'X') then
             print("Car TOTALLED")
         end
         if (self._orientation ~= 'X') then
@@ -46,16 +45,30 @@ function Car:act(grid)
                 grid:moveRel(self._piece, 'N')
             end
         end
-        local lane_orientation = wayPointFollower:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
+        local lane_orientation = laneChanger:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
         if (lane_orientation ~= 'X') then
             grid:moveAbs(self._piece, lane_orientation)
         end
     else
-
+        print("Car Speed: "..self._velocity)
+        self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
+        if (self._orientation == 'X' or self._waypoint == 'X') then
+            print("Car TOTALLED")
+        end
+        if (self._orientation ~= 'X') then
+            grid:setOrientation(self._piece, self._orientation)
+            self:safeGapCalculation(grid, self._piece, self._orientation, self._rayCastLength)
+            self:updateCarState(grid)
+            for i = 1, (self._velocity) do
+                grid:moveRel(self._piece, 'N')
+            end
+        end
+        local lane_orientation = laneChanger:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
+        if (lane_orientation ~= 'X') then
+            grid:moveAbs(self._piece, lane_orientation)
+        end
     end
-    self._orientation, self._waypoint = wayPointFollower:wayPointFollow(grid, self._piece, self._orientation, self._waypoint)
-    self:updateSpeed(grid)
-    local lane_orientation = wayPointFollower:LaneChange(grid, self._piece, self._orientation, self._rayCastLength)
+
     -- Legacy Mission system code
     -- if (self._avatar_ai:positionEquality(grid:position(self._piece), self._targets[self._missionIndex])) then
     --    self._missionIndex = math.fmod(self._missionIndex + 1,#self._targets+1)
@@ -66,6 +79,7 @@ function Car:act(grid)
 end
 
 function Car:accelerate()
+    --print("ACCELERATE")
     if (self._velocity >= self._max_velocity) then
         self._acceleration = 0
         return
@@ -77,6 +91,7 @@ function Car:accelerate()
 end
 
 function Car:brake()
+    --print("BRAKE")
     if (self._velocity <= 0) then
         self._acceleration = 0
         return
@@ -88,15 +103,18 @@ function Car:brake()
     self._acceleration = self._acceleration - 1
 end
 
-
 function Car:updateCarState(grid)
-    local trigger = wayPointFollower:TriggerInterpreter(wayPointFollower:ExtractTrigger(grid:position(self._piece), 64))
-    if(trigger == 'intersection') then
+    local trigger = map_interpreter:TriggerInterpreter(map_interpreter:ExtractTrigger(grid:position(self._piece), 64))
+    if (trigger == 'intersection') then
         self._max_velocity = 1
         self._priority = 1
-    elseif(trigger == 'lane') then
+    elseif (trigger == 'lane') then
         self._priority = 3
         self._max_velocity = 3
+        if(not self._isBot) then
+            self._max_velocity = 6
+            self._timeGap = 1
+        end
     end
     self:updateSpeed()
 end
@@ -117,16 +135,15 @@ function Car:safeGapCalculation(grid, piece, orientation, rayCastLength)
     if (rayCastLength == nil) then
         rayCastLength = 4
     end
-
     local me_position = grid:position(piece)
     local direction = aiHelper:orientation_to_position({ 0, 0 }, orientation, rayCastLength)
     -- get offset from piece in front, ignore hit bool, piece object.
     local _, other_piece, offset = grid:rayCastDirection(grid:layer(piece), me_position, direction)
     local other_car_vel = 0
     -- Getting the velocity of the car hit by the rayCast
-    if(other_piece ~= nil) then
-        if(grid:userState(other_piece)) then
-           other_car_vel = grid:userState(other_piece)["carModel"]["_velocity"]
+    if (other_piece ~= nil) then
+        if (grid:userState(other_piece)) then
+            other_car_vel = grid:userState(other_piece)["carModel"]["_velocity"]
         end
     end
     local displacement = aiHelper:L2_distance({ 0, 0 }, offset)
@@ -141,20 +158,12 @@ function Car:safeGapCalculation(grid, piece, orientation, rayCastLength)
     end
     local crash_time = displacement / relative_vel
     local stop_time = self._velocity / self._maxAcceleration
-    --print("stp time:"..stop_time.." vel"..self._velocity.." crash time: "..crash_time)
     local time_gap = math.abs(crash_time - stop_time)
     if (time_gap > self._timeGap) then
-        --print("Safe: "..time_gap.." vel: "..self._velocity)
         self:accelerate()
-        return true
-    elseif (time_gap <= (self._timeGap - 0.5)) then
+    elseif (time_gap <= (self._timeGap - 0.2)) then
         self:brake()
-        --print("Brake!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
-        --print("stp time:"..stop_time.." vel"..self._velocity.." crash time: "..crash_time)
-        --print("UnSafe "..time_gap.." vel: "..self._velocity)
-        return false
     end
-    --print("Cruise!! time_gap: " .. time_gap .. " vel: " .. self._velocity)
 end
 
 function Car:getVelocity()

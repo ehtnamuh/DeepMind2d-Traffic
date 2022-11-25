@@ -15,7 +15,7 @@ limitations under the License.
 
 -- Critical problem, absolute path to text maps has to be loaded each time location of project changes
 -- Have to find a way to fix this
-local path = "/home/samin/Desktop/Projects/DeepMind2d/DeepMind2d-Traffic/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
+local path = "/home/samin/Desktop/Projects/DeepMindLab/lab2d/dmlab2d/lib/game_scripts/levels/traffic_norms/text_maps/"
 
 local temp_path = path.."playerSpawns.txt"
 io.input(temp_path)

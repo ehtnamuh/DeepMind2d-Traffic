@@ -132,7 +132,9 @@ function AvatarList:update(grid)
     self:_startFrame()
     for _, av in ipairs(self._avatarList) do
         local test = av:update(grid)
-        print(test)
+        if(not av._isBot) then
+            print("ACTION APPROVED NO COLLISIONS")
+        end
     end
 --    after getting all the jobs from the avatars
 --    Avatar list executes by priority
